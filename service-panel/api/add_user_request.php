@@ -1,5 +1,5 @@
 <?php
-require_once '../../config/db.php';
+require_once __DIR__ . '/../../config/db.php';
 
 header('Content-Type: application/json');
 
@@ -76,7 +76,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // Image Upload & Processing
-    require_once 'image_helper.php';
+    require_once __DIR__ . '/image_helper.php';
     $image_path = null;
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
         $filename = processAndSaveImage($_FILES['image'], "../../uploads/service-requests/");
