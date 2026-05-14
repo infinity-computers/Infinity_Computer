@@ -275,9 +275,7 @@
       }
 
       try {
-        // Use a relative URL so it works on any domain or sub‑folder
-        const apiUrl = `${window.location.origin}/InfinityComputer/service-panel/api/add_user_request.php`;
-        const response = await fetch(apiUrl, {
+        const response = await fetch('service-panel/api/add_user_request.php', {
           method: 'POST',
           body: formData
         });
@@ -308,7 +306,7 @@
          if (window.location.protocol === 'file:') {
            statusBox.innerHTML = "<strong>Network Error:</strong> API calls are blocked when using <code>file://</code> protocol. Please use <code>http://localhost</code>.";
          } else {
-           statusBox.innerText = "Network error or Server misconfiguration. Please ensure your local server is running.";
+           statusBox.innerText = "Network error or Server misconfiguration. Please try again later or contact support.";
          }
          if (window.grecaptcha) grecaptcha.reset();
          document.getElementById('submitBtn').disabled = true;

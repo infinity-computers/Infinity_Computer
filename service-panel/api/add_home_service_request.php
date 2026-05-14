@@ -1,73 +1,62 @@
 <?php
-require_once __DIR__ . '/../../config/db.php';
-
 header('Content-Type: application/json');
+try {
+    require_once __DIR__ . '/../../config/db.php';
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Auto-create table if not exists
-    $conn->query("CREATE TABLE IF NOT EXISTS home_service_requests (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        service_id VARCHAR(50) NOT NULL UNIQUE,
-        name VARCHAR(255) NOT NULL,
-        phone VARCHAR(20) NOT NULL,
-        email VARCHAR(255) NOT NULL,
-        address TEXT NOT NULL,
-        service_type VARCHAR(100) NOT NULL,
-        booking_date DATE NOT NULL,
-        time_slot VARCHAR(50) NOT NULL,
-        problem TEXT NOT NULL,
-        status VARCHAR(50) DEFAULT 'Pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )");
+    if ($_SERVER["REQUEST_METHOD"] == "POST") {
+        // Auto-create table if not exists
+        $conn->query("CREATE TABLE IF NOT EXISTS home_service_requests (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            service_id VARCHAR(50) NOT NULL UNIQUE,
+            name VARCHAR(255) NOT NULL,
+            phone VARCHAR(20) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            address TEXT NOT NULL,
+            service_type VARCHAR(100) NOT NULL,
+            booking_date DATE NOT NULL,
+            time_slot VARCHAR(50) NOT NULL,
+            problem TEXT NOT NULL,
+            status VARCHAR(50) DEFAULT 'Pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
 
-    // Ensure columns exist (Compatible with older MySQL)
-    $res = $conn->query("SHOW COLUMNS FROM home_service_requests LIKE 'problem'");
-    if ($res->num_rows == 0) {
-        $conn->query("ALTER TABLE home_service_requests ADD COLUMN problem TEXT DEFAULT NULL AFTER time_slot");
-    }
-
-    $name = $_POST['name'] ?? '';
-    $phone = $_POST['phone'] ?? '';
-    $email = $_POST['email'] ?? '';
-    $address = $_POST['address'] ?? '';
-    $service_type = $_POST['service_type'] ?? '';
-    $booking_date = $_POST['booking_date'] ?? '';
-    $time_slot = $_POST['time_slot'] ?? '';
-    $problem = $_POST['problem'] ?? '';
-
-    // Verify reCAPTCHA
-    $recaptchaSecret = '6LcadY0sAAAAAE-ADcAzbPWGpJLAdi1oW2jLB4Qe';
-    $recaptchaResponse = $_POST['g-recaptcha-response'] ?? '';
-    
-    $verifyResponse = file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret=' . $recaptchaSecret . '&response=' . $recaptchaResponse);
-    $responseData = json_decode($verifyResponse);
-
-    if (!$responseData->success) {
-        echo json_encode(['status' => 'error', 'message' => 'Robot verification failed. Please try again.']);
-        exit;
-    }
-
-    // Image Processing (Reverted)
-    $image_path = null;
-    /*
-    require_once 'image_helper.php';
-    if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-        $filename = processAndSaveImage($_FILES['image'], "../../uploads/service-requests/");
-        if ($filename) {
-            $image_path = "uploads/service-requests/" . $filename;
+        // Ensure columns exist (Compatible with older MySQL)
+        $res = $conn->query("SHOW COLUMNS FROM home_service_requests LIKE 'problem'");
+        if ($res->num_rows == 0) {
+            $conn->query("ALTER TABLE home_service_requests ADD COLUMN problem TEXT DEFAULT NULL AFTER time_slot");
         }
-    }
-    */
 
-    $date_prefix = date("Ymd");
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM home_service_requests WHERE DATE(created_at) = CURDATE()");
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $row = $res->fetch_assoc();
-    $next_num = $row['count'] + 1;
-    $service_id = "INF-HOME-" . $date_prefix . "-" . str_pad($next_num, 3, "0", STR_PAD_LEFT);
+        $name = $_POST['name'] ?? '';
+        $phone = $_POST['phone'] ?? '';
+        $email = $_POST['email'] ?? '';
+        $address = $_POST['address'] ?? '';
+        $service_type = $_POST['service_type'] ?? '';
+        $booking_date = $_POST['booking_date'] ?? '';
+        $time_slot = $_POST['time_slot'] ?? '';
+        $problem = $_POST['problem'] ?? '';
 
-    try {
+        // Verify reCAPTCHA
+        /* Temporarily disabled
+        $recaptchaSecret = '6LcadY0sAAAAAE-ADcAzbPWGpJLAdi1oW2jLB4Qe';
+        $recaptchaResponse = $_POST['g-recaptcha-response'] ?? '';
+        
+        $verifyResponse = file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret=' . $recaptchaSecret . '&response=' . $recaptchaResponse);
+        $responseData = json_decode($verifyResponse);
+
+        if (!$responseData->success) {
+            echo json_encode(['status' => 'error', 'message' => 'Robot verification failed. Please try again.']);
+            exit;
+        }
+        */
+
+        $date_prefix = date("Ymd");
+        $stmt = $conn->prepare("SELECT COUNT(*) as count FROM home_service_requests WHERE DATE(created_at) = CURDATE()");
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $row = $res->fetch_assoc();
+        $next_num = $row['count'] + 1;
+        $service_id = "INF-HOME-" . $date_prefix . "-" . str_pad($next_num, 3, "0", STR_PAD_LEFT);
+
         $stmt = $conn->prepare("INSERT INTO home_service_requests (service_id, name, phone, email, address, service_type, booking_date, time_slot, problem, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')");
         $stmt->bind_param("sssssssss", $service_id, $name, $phone, $email, $address, $service_type, $booking_date, $time_slot, $problem);
         $stmt->execute();
@@ -120,10 +109,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         @mail($to, $subject, $message, $headers);
         
         echo json_encode(['status' => 'success', 'service_id' => $service_id, 'message' => 'Home service booked successfully.']);
-    } catch(Exception $e) {
-        echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid request method']);
     }
-} else {
-    echo json_encode(['status' => 'error', 'message' => 'Invalid request method']);
+} catch (Exception $e) {
+    echo json_encode(['status' => 'error', 'message' => 'Server Error: ' . $e->getMessage()]);
 }
 ?>

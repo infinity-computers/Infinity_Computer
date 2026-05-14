@@ -230,7 +230,7 @@
         }
       } catch (error) {
         console.error("Tracking error:", error);
-        let errorMsg = "Network error or Server misconfiguration. Please ensure your local server is running.";
+        let errorMsg = "Network error or Server misconfiguration. Please try again later or contact support.";
         if (window.location.protocol === 'file:') {
           errorMsg = "<strong>Network Error:</strong> API calls are blocked when using <code>file://</code> protocol. Please use <code>http://localhost</code>.";
         }

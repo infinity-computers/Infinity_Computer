@@ -1,18 +1,18 @@
 <?php
-require_once __DIR__ . '/../../config/db.php';
 header('Content-Type: application/json');
+try {
+    require_once __DIR__ . '/../../config/db.php';
 
-if (isset($_GET['q'])) {
-    $q = $_GET['q'];
-    
-    $data = [];
-    
-    // Production Mode: Limit visibility to 30 days (43200 minutes)
-    // Rule: Show if (created within 30 days) OR (status is still 'Pending' or 'Pending Approval')
-    $visibilityCondition = "AND (TIMESTAMPDIFF(MINUTE, created_at, NOW()) <= 43200 OR status IN ('Pending Approval', 'Pending'))";
-    $serviceVisibilityCondition = "AND (TIMESTAMPDIFF(MINUTE, s.created_at, NOW()) <= 43200 OR s.status IN ('Pending Approval', 'Pending'))";
+    if (isset($_GET['q'])) {
+        $q = $_GET['q'];
+        
+        $data = [];
+        
+        // Production Mode: Limit visibility to 30 days (43200 minutes)
+        // Rule: Show if (created within 30 days) OR (status is still 'Pending' or 'Pending Approval')
+        $visibilityCondition = "AND (TIMESTAMPDIFF(MINUTE, created_at, NOW()) <= 43200 OR status IN ('Pending Approval', 'Pending'))";
+        $serviceVisibilityCondition = "AND (TIMESTAMPDIFF(MINUTE, s.created_at, NOW()) <= 43200 OR s.status IN ('Pending Approval', 'Pending'))";
 
-    try {
         // 1. Search user_service_requests
         $stmt1 = $conn->prepare("SELECT *, 'service' as request_type FROM user_service_requests WHERE (service_id = ? OR phone = ? OR name = ?) $visibilityCondition ORDER BY created_at DESC LIMIT 10");
         $stmt1->bind_param("sss", $q, $q, $q);
@@ -57,10 +57,10 @@ if (isset($_GET['q'])) {
         } else {
             echo json_encode(['status' => 'error', 'message' => 'No recent or active requests found.']);
         }
-    } catch(Exception $e) {
-        echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Query parameter missing.']);
     }
-} else {
-    echo json_encode(['status' => 'error', 'message' => 'Query parameter missing.']);
+} catch(Exception $e) {
+    echo json_encode(['status' => 'error', 'message' => 'Server Error: ' . $e->getMessage()]);
 }
 ?>
