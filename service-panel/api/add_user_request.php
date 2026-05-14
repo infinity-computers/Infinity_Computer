@@ -45,6 +45,19 @@ try {
             exit;
         }
 
+        // Verify reCAPTCHA
+        $recaptchaSecret = '6LcadY0sAAAAAE-ADcAzbPWGpJLAdi1oW2jLB4Qe';
+        $recaptchaResponse = $_POST['g-recaptcha-response'] ?? '';
+        
+        $verifyResponse = file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret=' . $recaptchaSecret . '&response=' . $recaptchaResponse);
+        $responseData = json_decode($verifyResponse);
+
+        if (!$responseData->success) {
+            ob_clean();
+            echo json_encode(['status' => 'error', 'message' => 'Robot verification failed. Please try again.']);
+            exit;
+        }
+
         // Determine unique ID INF-SRV-YYYYMMDD-XXXX
         $date_prefix = date("Ymd");
         $stmt = $conn->prepare("SELECT COUNT(*) as count FROM user_service_requests WHERE DATE(created_at) = CURDATE()");
