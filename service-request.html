@@ -254,8 +254,12 @@
     }
 
     // Initialize Image Process (Success message instead of preview)
-    ImageProcessor.setupPreview('.image-input', '#imagePreview', false);
-    ImageProcessor.initCameraVisibility('.camera-btn');
+    if (typeof ImageProcessor !== 'undefined') {
+      ImageProcessor.setupPreview('.image-input', '#imagePreview', false);
+      ImageProcessor.initCameraVisibility('.camera-btn');
+    } else {
+      console.error("ImageProcessor.js not loaded. Image uploads may fail.");
+    }
 
     document.getElementById('serviceRequestForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -286,7 +290,13 @@
             result = JSON.parse(responseText);
         } catch (e) {
             console.error("Invalid JSON response:", responseText);
-            throw new Error("Server returned non-JSON response. Please check server logs.");
+            // Alert the user with the actual server response (first 200 chars) to see the error
+            const snippet = responseText.substring(0, 300);
+            statusBox.style.display = 'block';
+            statusBox.style.color = '#d93025';
+            statusBox.style.backgroundColor = '#fce8e6';
+            statusBox.innerHTML = `<strong>Server Error:</strong> The server returned an invalid response. <br><br> <pre style="text-align:left; font-size:0.8rem; background:#fff; padding:10px; border:1px solid #ccc;">${snippet.replace(/</g, '&lt;')}</pre>`;
+            throw new Error("Server returned non-JSON response.");
         }
 
         statusBox.style.display = 'block';

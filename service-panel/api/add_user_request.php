@@ -39,6 +39,7 @@ try {
         $problem = $_POST['problem'] ?? '';
 
         if (empty($name) || empty($phone) || empty($email) || empty($address) || empty($device_type) || empty($problem)) {
+            ob_clean();
             echo json_encode(['status' => 'error', 'message' => 'All mandatory fields are required (Name, Phone, Email, Address, Device Type, Problem).']);
             exit;
         }
@@ -71,10 +72,12 @@ try {
             if ($filename) {
                 $image_path = "uploads/service-requests/" . $filename;
             } else {
+                ob_clean();
                 echo json_encode(['status' => 'error', 'message' => 'Image processing failed.']);
                 exit;
             }
         } else {
+            ob_clean();
             echo json_encode(['status' => 'error', 'message' => 'Image is mandatory for submitting a request.']);
             exit;
         }
@@ -129,8 +132,10 @@ try {
         
         @mail($to, $subject, $message, $headers);
         
+        ob_clean();
         echo json_encode(['status' => 'success', 'service_id' => $service_id, 'message' => 'Service request submitted successfully. We will review it shortly.']);
     } else {
+        ob_clean();
         echo json_encode(['status' => 'error', 'message' => 'Invalid request method']);
     }
 } catch (Exception $e) {
