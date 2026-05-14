@@ -1,4 +1,5 @@
 <?php
+error_reporting(0);
 ob_start();
 header('Content-Type: application/json');
 try {
@@ -66,4 +67,3 @@ try {
     echo json_encode(['status' => 'error', 'message' => 'Server Error: ' . $e->getMessage()]);
 }
 ob_end_flush();
-?>
