@@ -7,7 +7,9 @@ $allowedEmails = [
     'karan@staff.infinitycomputer.in',
     'suraj@staff.infinitycomputer.in',
     'rahul@staff.infinitycomputer.in',
-    'paresh@staff.infinitycomputer.in'
+    'paresh@staff.infinitycomputer.in',
+    'icc@infinitycomputer.in',
+    'pacifier2204@gmail.com'
 ];
 
 $input = json_decode(file_get_contents('php://input'), true);

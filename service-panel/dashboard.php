@@ -149,7 +149,9 @@
                         Service</a></li>
                 <li><a href="javascript:void(0)" id="headerDashboard" onclick="switchTab('main-workflow')"
                         class="header-active">Dashboard</a></li>
+                <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
                 <li><a href="crm.php">CRM Analytics</a></li>
+                <?php endif; ?>
             </ul>
         </div>
     </header>

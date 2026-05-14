@@ -13,8 +13,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $company = $_POST['company'] ?? '';
     $problem = $_POST['problem'] ?? '';
     
-    if (empty($name) || empty($phone) || empty($service_type) || empty($device_name) || empty($problem)) {
-        echo json_encode(['status' => 'error', 'message' => 'All fields are required']);
+    if (empty($name) || empty($phone) || empty($email) || empty($company) || empty($service_type) || empty($device_name) || empty($problem)) {
+        echo json_encode(['status' => 'error', 'message' => 'All text fields are required']);
+        exit;
+    }
+
+    if (!isset($_FILES['image']) || $_FILES['image']['error'] != 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Device Image is required.']);
         exit;
     }
 

@@ -321,7 +321,9 @@
                         class="header-active">Track Service</a></li>
                 <li><a href="javascript:void(0)" id="headerNewService" onclick="switchTab('new-service-tab')">Add New Service</a></li>
                 <li><a href="dashboard.php">Dashboard</a></li>
+                <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
                 <li><a href="crm.php">CRM Analytics</a></li>
+                <?php endif; ?>
             </ul>
         </div>
     </header>
@@ -366,8 +368,8 @@
                             <input type="tel" name="phone" class="form-control" required placeholder="e.g. 9876543210">
                         </div>
                         <div class="form-group">
-                            <label>Email Address</label>
-                            <input type="email" name="email" class="form-control" placeholder="e.g. user@example.com">
+                            <label>Email Address <span style="color:var(--danger)">*</span></label>
+                            <input type="email" name="email" class="form-control" required placeholder="e.g. user@example.com">
                         </div>
                         <div class="form-group">
                             <label>Service Type <span style="color:var(--danger)">*</span></label>
@@ -388,8 +390,8 @@
                                 required>
                         </div>
                         <div class="form-group">
-                            <label>Company Name</label>
-                            <input type="text" name="company" class="form-control" placeholder="e.g. Acme Corp">
+                            <label>Company Name <span style="color:var(--danger)">*</span></label>
+                            <input type="text" name="company" class="form-control" required placeholder="e.g. Acme Corp">
                         </div>
                     </div>
 
@@ -411,7 +413,7 @@
                     </div>
 
                     <div class="form-group mt-4">
-                        <label>Upload Device Image (Optional)</label>
+                        <label>Upload Device Image <span style="color:var(--danger)">*</span></label>
                         <div class="image-upload-wrapper">
                             <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
                                 <label

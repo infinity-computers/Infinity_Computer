@@ -1,4 +1,11 @@
 <?php include __DIR__ . '/auth_guard.php'; ?>
+<?php
+$allowed_crm_emails = ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'];
+if (!in_array($_SESSION['staff_email'] ?? '', $allowed_crm_emails)) {
+    header('Location: dashboard.php');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -69,7 +76,9 @@
                 <li><a href="index.php">Track Service</a></li>
                 <li><a href="javascript:void(0)" id="headerNewService" onclick="switchTab('new-service-tab')">Add New Service</a></li>
                 <li><a href="dashboard.php">Dashboard</a></li>
+                <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
                 <li><a href="javascript:void(0)" id="headerCrm" onclick="switchTab('crm-analytics-tab')" class="header-active">CRM Analytics</a></li>
+                <?php endif; ?>
             </ul>
         </div>
     </header>
