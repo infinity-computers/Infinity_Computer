@@ -275,7 +275,9 @@
       }
 
       try {
-        const response = await fetch('service-panel/api/add_user_request.php', {
+        // Use a relative URL so it works on any domain or sub‑folder
+        const apiUrl = `${window.location.origin}/InfinityComputer/service-panel/api/add_user_request.php`;
+        const response = await fetch(apiUrl, {
           method: 'POST',
           body: formData
         });

@@ -1,9 +1,9 @@
 <?php
 // Configuration for local database
 define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'infinity_students');
+define('DB_USER', 'u211084505_infinity');
+define('DB_PASS', 'Host@5341');
+define('DB_NAME', 'u211084505_infinity');
 
 // Create connection
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
