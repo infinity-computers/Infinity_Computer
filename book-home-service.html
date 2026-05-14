@@ -324,7 +324,14 @@
           method: 'POST',
           body: formData
         });
-        const result = await response.json();
+        const responseText = await response.text();
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (e) {
+            console.error("Invalid JSON response:", responseText);
+            throw new Error("Server returned non-JSON response. Please check server logs.");
+        }
 
         statusBox.style.display = 'block';
         if (result.status === 'success') {

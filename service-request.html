@@ -10,8 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=1.2">
-  <!-- Google reCAPTCHA -->
-  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <!-- reCAPTCHA removed for testing -->
   <style>
     .loading-spinner {
       display: inline-block;
@@ -209,12 +208,7 @@
             </div>
 
              <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 30px;">
-               <!-- reCAPTCHA -->
-               <div class="recaptcha-wrapper">
-                 <div class="g-recaptcha" data-sitekey="6LcadY0sAAAAAJZIH1jS5M3spZQ9qRn05lF0oB6d"
-                   data-callback="onRecaptchaSuccess" data-expired-callback="onRecaptchaExpired"></div>
-               </div>
-               <button class="btn btn-primary" type="submit" id="submitBtn" disabled
+               <button class="btn btn-primary" type="submit" id="submitBtn"
                  style="width: 100%; max-width: 300px; padding: 15px; font-size: 1.1rem;">Submit Request</button>
              </div>
 
@@ -236,13 +230,7 @@
   <script src="service-panel/assets/js/image-processor.js?v=1.4"></script>
   <script src="js/script.js?v=1.4"></script>
   <script>
-    // reCAPTCHA Callbacks
-    function onRecaptchaSuccess() {
-      document.getElementById('submitBtn').disabled = false;
-    }
-    function onRecaptchaExpired() {
-      document.getElementById('submitBtn').disabled = true;
-    }
+    // reCAPTCHA Callbacks removed for testing
 
     // Check for local file protocol
     if (window.location.protocol === 'file:') {
@@ -279,7 +267,15 @@
           method: 'POST',
           body: formData
         });
-        const result = await response.json();
+        
+        const responseText = await response.text();
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (e) {
+            console.error("Invalid JSON response:", responseText);
+            throw new Error("Server returned non-JSON response. Please check server logs.");
+        }
 
         statusBox.style.display = 'block';
         if (result.status === 'success') {
@@ -288,14 +284,14 @@
           statusBox.innerHTML = `${result.message}<br>Your Service ID is: <strong style="font-size:1.3rem;">${result.service_id}</strong><br>Please save this ID to track your request.`;
            form.reset();
            document.getElementById('imagePreview').innerHTML = ''; // Clear preview
-           if (window.grecaptcha) grecaptcha.reset();
+           // if (window.grecaptcha) grecaptcha.reset();
            document.getElementById('submitBtn').disabled = true;
            window.lastProcessedBlob = null;
          } else {
            statusBox.style.color = '#d93025';
            statusBox.style.backgroundColor = '#fce8e6';
            statusBox.innerText = 'Error: ' + result.message;
-           if (window.grecaptcha) grecaptcha.reset();
+           // if (window.grecaptcha) grecaptcha.reset();
            document.getElementById('submitBtn').disabled = true;
          }
        } catch (error) {
@@ -306,7 +302,7 @@
          if (window.location.protocol === 'file:') {
            statusBox.innerHTML = "<strong>Network Error:</strong> API calls are blocked when using <code>file://</code> protocol. Please use <code>http://localhost</code>.";
          } else {
-           statusBox.innerText = "Network error or Server misconfiguration. Please try again later or contact support.";
+           statusBox.innerText = error.message || "Network error or Server misconfiguration. Please try again later or contact support.";
          }
          if (window.grecaptcha) grecaptcha.reset();
          document.getElementById('submitBtn').disabled = true;

@@ -1,4 +1,5 @@
 <?php
+ob_start();
 header('Content-Type: application/json');
 try {
     require_once __DIR__ . '/../../config/db.php';
@@ -113,6 +114,8 @@ try {
         echo json_encode(['status' => 'error', 'message' => 'Invalid request method']);
     }
 } catch (Exception $e) {
+    ob_clean();
     echo json_encode(['status' => 'error', 'message' => 'Server Error: ' . $e->getMessage()]);
 }
+ob_end_flush();
 ?>

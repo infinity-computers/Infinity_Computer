@@ -53,7 +53,17 @@ function processAndSaveImage($file, $target_dir, $watermark_text = "Infinity Com
         $height = $new_h;
     }
 
-    $font_path = 'C:/Windows/Fonts/arial.ttf';
+    // Portable font path
+    $font_path = __DIR__ . '/arial.ttf'; 
+    if (!file_exists($font_path)) {
+        // Fallback for Windows
+        $font_path = 'C:/Windows/Fonts/arial.ttf';
+    }
+    // Fallback for Linux common paths
+    if (!file_exists($font_path)) {
+        $font_path = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
+    }
+
     $use_ttf = file_exists($font_path) && function_exists('imagettftext');
 
     // Config Colors

@@ -1,4 +1,5 @@
 <?php
+ob_start();
 header('Content-Type: application/json');
 try {
     require_once __DIR__ . '/../../config/db.php';
@@ -60,7 +61,9 @@ try {
     } else {
         echo json_encode(['status' => 'error', 'message' => 'Query parameter missing.']);
     }
-} catch(Exception $e) {
+} catch (Exception $e) {
+    ob_clean();
     echo json_encode(['status' => 'error', 'message' => 'Server Error: ' . $e->getMessage()]);
 }
+ob_end_flush();
 ?>
