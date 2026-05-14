@@ -94,7 +94,7 @@ function processAndSaveImage($file, $target_dir, $watermark_text = "Infinity Com
         $fsize = 5;
         $tw = imagefontwidth($fsize) * strlen($watermark_text);
         $x = ($width - $tw) / 2; $y = $height / 2;
-        imagestring($image, $fsize, $x, $y, $white_fill, $watermark_text);
+        imagestring($image, $fsize, $x, $y, $watermark_text, $white_fill);
     }
 
     // 2. Timestamp (Bottom-Right)
