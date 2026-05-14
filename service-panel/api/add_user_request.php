@@ -139,7 +139,7 @@ try {
         ob_clean();
         echo json_encode(['status' => 'error', 'message' => 'Invalid request method']);
     }
-} catch (Exception $e) {
+} catch (Throwable $e) {
     ob_clean();
     echo json_encode(['status' => 'error', 'message' => 'Server Error: ' . $e->getMessage()]);
 }
