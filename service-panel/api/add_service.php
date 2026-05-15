@@ -12,6 +12,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $device_name = $_POST['device_name'] ?? '';
     $company = $_POST['company'] ?? '';
     $problem = $_POST['problem'] ?? '';
+    $assigned_engineer = $_POST['assigned_engineer'] ?? '';
     
     if (empty($name) || empty($phone) || empty($email) || empty($company) || empty($service_type) || empty($device_name) || empty($problem)) {
         echo json_encode(['status' => 'error', 'message' => 'All text fields are required']);
@@ -47,6 +48,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $res = $conn->query("SHOW COLUMNS FROM services LIKE 'company'");
     if ($res->num_rows == 0) {
         $conn->query("ALTER TABLE services ADD COLUMN company VARCHAR(255) DEFAULT NULL AFTER device_name");
+    }
+    $res = $conn->query("SHOW COLUMNS FROM services LIKE 'assigned_engineer'");
+    if ($res->num_rows == 0) {
+        $conn->query("ALTER TABLE services ADD COLUMN assigned_engineer VARCHAR(255) DEFAULT NULL AFTER status");
     }
 
     // Ensure email and company column exists in customers table
@@ -186,8 +191,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         $date_received = date('Y-m-d');
         
-        $stmt = $conn->prepare("INSERT INTO services (service_id, customer_id, service_type, device_name, company, problem, image_path, status, date_received) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?)");
-        $stmt->bind_param("sissssss", $service_id, $customer_id, $service_type, $device_name, $company, $problem, $image_path, $date_received);
+        $stmt = $conn->prepare("INSERT INTO services (service_id, customer_id, service_type, device_name, company, problem, image_path, status, assigned_engineer, date_received) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?)");
+        $stmt->bind_param("sisssssss", $service_id, $customer_id, $service_type, $device_name, $company, $problem, $image_path, $assigned_engineer, $date_received);
         $stmt->execute();
         $service_pk = $conn->insert_id;
 
@@ -196,6 +201,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt->execute();
 
         $conn->commit();
+
+        // Send Email to Assigned Engineer
+        if (!empty($assigned_engineer)) {
+            require_once 'email_helper.php';
+            $engineer_emails = [
+                'Suraj' => 'suraj@staff.infinitycomputer.in',
+                'Akshar' => 'akshar@staff.infinitycomputer.in',
+                'Karan' => 'karan@staff.infinitycomputer.in',
+                'Rahul' => 'rahul@staff.infinitycomputer.in',
+                'Paresh' => 'paresh@staff.infinitycomputer.in'
+            ];
+            $eng_email = $engineer_emails[$assigned_engineer] ?? '';
+            if ($eng_email) {
+                sendEngineerAssignmentEmail($eng_email, $assigned_engineer, $service_id, $name, $device_name, $problem);
+            }
+        }
 
         if (!empty($email)) {
             // Send Email Notification to User

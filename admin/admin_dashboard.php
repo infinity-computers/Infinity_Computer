@@ -208,8 +208,8 @@ $pendingLaptopCount = $conn->query("SELECT COUNT(*) FROM second_hand_laptop_requ
                             <div class="module-icon">
                                 <i class="fa-solid fa-laptop-medical"></i>
                             </div>
-                            <h2 class="module-title">Laptop Buyback</h2>
-                            <p class="module-desc">Handle second-hand laptop selling requests, verify device details, and manage buyback workflow.</p>
+                            <h2 class="module-title">Gadget Buyback</h2>
+                            <p class="module-desc">Handle second-hand Gadget selling requests, verify device details, and manage buyback workflow.</p>
                         </a>
                         
                         <div class="mt-auto">

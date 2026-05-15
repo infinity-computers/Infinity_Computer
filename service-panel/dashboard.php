@@ -292,6 +292,17 @@
                             <label>Company Name <span style="color:var(--danger)">*</span></label>
                             <input type="text" name="company" class="form-control" required placeholder="e.g. Acme Corp">
                         </div>
+                        <div class="form-group">
+                            <label>Assign Engineer</label>
+                            <select name="assigned_engineer" class="form-control">
+                                <option value="">Select Engineer...</option>
+                                <option value="Suraj">Suraj</option>
+                                <option value="Akshar">Akshar</option>
+                                <option value="Karan">Karan</option>
+                                <option value="Rahul">Rahul</option>
+                                <option value="Paresh">Paresh</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="form-group mt-4">
@@ -376,6 +387,18 @@
                                 <option value="Delivered">Delivered</option>
                                 <option value="Cancelled">Cancelled</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Assigned Engineer</label>
+                            <select name="assigned_engineer" id="engineerSelect" class="form-control" style="font-weight:600;">
+                                <option value="">Not Assigned</option>
+                                <option value="Suraj">Suraj</option>
+                                <option value="Akshar">Akshar</option>
+                                <option value="Karan">Karan</option>
+                                <option value="Rahul">Rahul</option>
+                                <option value="Paresh">Paresh</option>
+                            </select>
+                            <small id="engLockMsg" style="color:var(--danger); display:none; margin-top:5px;">Assignment cannot be changed for completed jobs.</small>
                         </div>
                         <div class="form-group">
                             <label>Remarks / Notes (Internal & Public)</label>
@@ -482,7 +505,7 @@
                     <td>${formatDate(svc.date_received)}</td>
                     <td><div style="font-weight:600;">${svc.name}</div><div class="text-muted" style="font-size:0.9rem;">${svc.phone}</div></td>
                     <td><div style="font-weight:600;">${svc.device_name}</div><div class="text-muted" style="font-size:0.9rem;">${svc.service_type}</div></td>
-                    <td><span class="${getStatusBadgeClass(svc.status)}">${svc.status}</span></td>
+                    <td><span class="${getStatusBadgeClass(svc.status)}">${svc.status}</span><br><small style="color:#666;">${svc.assigned_engineer ? '🔧 ' + svc.assigned_engineer : '<i>Unassigned</i>'}</small></td>
                     <td><button onclick="viewDetails('${svc.service_id}')" class="btn btn-primary" style="padding: 5px 15px; font-size: 0.85rem;">Manage</button></td>
                 `;
                 tbody.appendChild(tr);
@@ -508,6 +531,18 @@
                     document.getElementById('svcIdDisplay').innerHTML = `${svc.service_id} <span class="${getStatusBadgeClass(svc.status)}">${svc.status}</span>`;
                     document.getElementById('internalId').value = svc.id;
                     document.getElementById('statusSelect').value = svc.status;
+                    document.getElementById('engineerSelect').value = svc.assigned_engineer || '';
+
+                    // Disable engineer selection if Completed
+                    const engSelect = document.getElementById('engineerSelect');
+                    const lockMsg = document.getElementById('engLockMsg');
+                    if (svc.status === 'Completed') {
+                        engSelect.disabled = true;
+                        lockMsg.style.display = 'block';
+                    } else {
+                        engSelect.disabled = false;
+                        lockMsg.style.display = 'none';
+                    }
 
                     let html = `
                         <div class="info-grid">
@@ -516,6 +551,7 @@
                             <div class="info-item"><label>Service Type</label><div>${svc.service_type}</div></div>
                             <div class="info-item"><label>Device Model</label><div style="font-weight:600;">${svc.device_name}</div></div>
                             <div class="info-item"><label>Date Received</label><div>${formatDate(svc.date_received)}</div></div>
+                            <div class="info-item"><label>Assigned Engineer</label><div style="font-weight:700; color:var(--primary); font-size:1.1rem;">🔧 ${svc.assigned_engineer || 'Not Assigned'}</div></div>
                         </div>
                         <div class="mt-4 info-item" style="background:#fff; border:1px solid var(--border-color);">
                             <label>Problem Description</label>

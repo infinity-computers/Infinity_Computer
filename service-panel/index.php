@@ -394,6 +394,17 @@
                             <label>Company Name <span style="color:var(--danger)">*</span></label>
                             <input type="text" name="company" class="form-control" required placeholder="e.g. Acme Corp">
                         </div>
+                        <div class="form-group">
+                            <label>Assign Engineer</label>
+                            <select name="assigned_engineer" class="form-control">
+                                <option value="">Select Engineer...</option>
+                                <option value="Suraj">Suraj</option>
+                                <option value="Akshar">Akshar</option>
+                                <option value="Karan">Karan</option>
+                                <option value="Rahul">Rahul</option>
+                                <option value="Paresh">Paresh</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="form-group mt-4">
@@ -585,6 +596,7 @@
                 }
 
                 html += `<div style="border-top: 1px solid var(--border-color); padding-top: 25px; margin-top: 10px;"><h4 style="margin-bottom:15px; color:var(--muted); font-size:0.9rem; text-transform:uppercase;">Details & Information</h4><div class="info-grid"><div class="info-item"><label>Customer Details</label><div style="font-weight:600; font-size:1.1rem; color:var(--text-dark);">${svc.name}</div><div class="text-muted" style="font-size:0.9rem;">${svc.phone} ${svc.email ? ' | ' + svc.email : ''}</div></div><div class="info-item"><label>Device / Service</label><div style="font-weight:600; color:var(--text-dark);">${deviceDisplayName}</div><div class="text-muted" style="font-size:0.85rem;">${svc.service_type || (source === 'home' ? 'Home Service' : 'Standard')}</div></div></div>`;
+                if (svc.assigned_engineer) { html += `<div style="margin-top:15px; background:#f0f9ff; padding:10px 15px; border-radius:8px; border:1px solid #bae6fd;"><label style="color:#0369a1; font-weight:700; font-size:0.75rem; text-transform:uppercase;">Assigned Engineer</label><div style="font-weight:700; color:#0c4a6e; font-size:1.1rem;">🔧 ${svc.assigned_engineer}</div></div>`; }
                 if (source === 'home') { html += `<div class="info-grid" style="margin-top:15px;"><div class="info-item"><label>Schedule</label><div style="font-weight:600; color:var(--text-dark);">${svc.booking_date} at ${svc.time_slot}</div></div><div class="info-item"><label>Address</label><div style="font-weight:600; color:var(--text-dark);">${svc.address}</div></div></div>`; }
                 html += `<div class="info-item" style="margin-top: 15px; background: #fff; border: 1px solid var(--border-color);"><label>Reported Problem / Inquiry</label><div style="color:var(--text-dark);">${svc.problem || 'General Service Inquiry'}</div></div></div>`;
                 if (svc.image_path) { html += `<div class="mt-4"><label style="font-weight:600; color:var(--muted); font-size:0.85rem; text-transform:uppercase;">Attached Image</label><br><img src="../${svc.image_path}" class="device-image-preview" style="max-height:250px; border-radius:10px; margin-top:5px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);" alt="Device"></div>`; }

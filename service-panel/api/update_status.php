@@ -14,6 +14,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $service_pk = $data['id'] ?? '';
     $new_status = $data['status'] ?? '';
     $remarks = $data['remarks'] ?? '';
+    $assigned_engineer = $data['assigned_engineer'] ?? '';
 
     if(empty($service_pk) || empty($new_status)) {
         echo json_encode(['status' => 'error', 'message' => 'ID and status are required']);
@@ -32,6 +33,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $stmt->bind_param("si", $new_status, $service_pk);
         }
         $stmt->execute();
+
+        // Handle Engineer Re-assignment
+        $reassigned = false;
+        $stmt = $conn->prepare("SELECT status, assigned_engineer, service_id, device_name, customer_id FROM services WHERE id = ?");
+        $stmt->bind_param("i", $service_pk);
+        $stmt->execute();
+        $current_data = $stmt->get_result()->fetch_assoc();
+
+        if ($current_data && !empty($assigned_engineer) && $current_data['assigned_engineer'] !== $assigned_engineer) {
+            // Check if status is Completed
+            if ($current_data['status'] === 'Completed') {
+                // Ignore assignment change if completed
+            } else {
+                $stmt = $conn->prepare("UPDATE services SET assigned_engineer = ? WHERE id = ?");
+                $stmt->bind_param("si", $assigned_engineer, $service_pk);
+                $stmt->execute();
+                $reassigned = true;
+
+                // Send Email to NEW Assigned Engineer
+                require_once 'email_helper.php';
+                $engineer_emails = [
+                    'Suraj' => 'suraj@staff.infinitycomputer.in',
+                    'Akshar' => 'akshar@staff.infinitycomputer.in',
+                    'Karan' => 'karan@staff.infinitycomputer.in',
+                    'Rahul' => 'rahul@staff.infinitycomputer.in',
+                    'Paresh' => 'paresh@staff.infinitycomputer.in'
+                ];
+                $eng_email = $engineer_emails[$assigned_engineer] ?? '';
+                if ($eng_email) {
+                    // Get customer name
+                    $c_stmt = $conn->prepare("SELECT name FROM customers WHERE id = ?");
+                    $c_stmt->bind_param("i", $current_data['customer_id']);
+                    $c_stmt->execute();
+                    $cust_name = $c_stmt->get_result()->fetch_assoc()['name'] ?? 'Customer';
+                    
+                    sendEngineerAssignmentEmail($eng_email, $assigned_engineer, $current_data['service_id'], $cust_name, $current_data['device_name'], 'Task re-assigned', true);
+                }
+            }
+        }
 
         $stmt = $conn->prepare("INSERT INTO service_status_logs (service_id, status, remarks) VALUES (?, ?, ?)");
         $stmt->bind_param("iss", $service_pk, $new_status, $remarks);

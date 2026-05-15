@@ -221,6 +221,7 @@
                                  <p><strong>Device:</strong> ${item.brand} ${item.model} (${item.device_type})</p>
                                  <p><strong>Problem:</strong> ${item.problem}</p>
                                  <p><strong>Status:</strong> <span class="badge-status ${statusClass}">${item.status}</span></p>
+                                 ${item.assigned_engineer ? `<p><strong>Assigned Engineer:</strong> 🔧 ${item.assigned_engineer}</p>` : ''}
                                  <p><strong>Device Dropped Off:</strong> ${item.device_received == 1 ? '✅ Yes' : '❌ No (Please drop off at store)'}</p>
                                  ${imgHtml}
                                  ${mainWorkflowMsg}

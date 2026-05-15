@@ -214,4 +214,53 @@ function sendPendingDropoffEmail($email, $name, $service_id) {
     return @mail($email, $subject, $message, $headers);
 }
 
+
+/**
+ * Send an email to the engineer when a task is assigned or re-assigned
+ */
+function sendEngineerAssignmentEmail($engineer_email, $engineer_name, $service_id, $customer_name, $device_name, $problem, $is_reassignment = false) {
+    if (empty($engineer_email)) return false;
+
+    $subject = $is_reassignment ? "Infinity Computer - Task Re-assigned ({$service_id})" : "Infinity Computer - New Task Assigned ({$service_id})";
+    $headers = "MIME-Version: 1.0" . "\r\n";
+    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+    $headers .= "From: Infinity Computer <noreply@infinitycomputer.in>" . "\r\n";
+
+    $title = $is_reassignment ? "Task Re-assigned to You" : "New Task Assigned to You";
+    $statusMsg = $is_reassignment ? "A service task has been re-assigned to you for further action." : "A new service task has been assigned to you.";
+
+    $message = "
+    <html>
+    <head><title>{$title}</title></head>
+    <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+        <div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;'>
+            <h2 style='color: #0d6efd; text-align: center;'>{$title}</h2>
+            <p>Hello {$engineer_name},</p>
+            <p>{$statusMsg}</p>
+            
+            <div style='background: #f8fafc; padding: 15px; border-radius: 6px; margin: 20px 0; border: 1px dashed #cbd5e1;'>
+                <p style='margin: 5px 0;'><strong>Service ID:</strong> <span style='color: #0d6efd; font-weight: bold;'>{$service_id}</span></p>
+                <p style='margin: 5px 0;'><strong>Customer:</strong> {$customer_name}</p>
+                <p style='margin: 5px 0;'><strong>Device:</strong> {$device_name}</p>
+                <p style='margin: 5px 0;'><strong>Problem:</strong> {$problem}</p>
+            </div>
+
+            <p>Please check the Service Panel for more details and start working on this task.</p>
+
+            <div style='text-align: center; margin: 30px 0;'>
+                <a href='https://staff.infinitycomputer.in' style='background: #0d6efd; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>Open Service Panel</a>
+            </div>
+
+            <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;'>
+            <p style='font-size: 12px; color: #64748b; text-align: center;'>
+                &copy; " . date('Y') . " Infinity Computer. All rights reserved.
+            </p>
+        </div>
+    </body>
+    </html>
+    ";
+
+    return @mail($engineer_email, $subject, $message, $headers);
+}
+
 ?>
