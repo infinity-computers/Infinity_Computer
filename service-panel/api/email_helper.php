@@ -248,7 +248,52 @@ function sendEngineerAssignmentEmail($engineer_email, $engineer_name, $service_i
             <p>Please check the Service Panel for more details and start working on this task.</p>
 
             <div style='text-align: center; margin: 30px 0;'>
-                <a href='https://staff.infinitycomputer.in' style='background: #0d6efd; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>Open Service Panel</a>
+                <a href='https://infinitycomputer.in/service-panel/login.php' style='background: #0d6efd; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>Open Service Panel</a>
+            </div>
+
+            <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;'>
+            <p style='font-size: 12px; color: #64748b; text-align: center;'>
+                &copy; " . date('Y') . " Infinity Computer. All rights reserved.
+            </p>
+        </div>
+    </body>
+    </html>
+    ";
+
+    return @mail($engineer_email, $subject, $message, $headers);
+}
+
+/**
+ * Send a reminder email to the engineer if a task hasn't been updated
+ */
+function sendEngineerReminderEmail($engineer_email, $engineer_name, $service_id, $customer_name, $device_name, $last_update) {
+    if (empty($engineer_email)) return false;
+
+    $subject = "REMINDER: Action Required for Task {$service_id}";
+    $headers = "MIME-Version: 1.0" . "\r\n";
+    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+    $headers .= "From: Infinity Computer <noreply@infinitycomputer.in>" . "\r\n";
+
+    $message = "
+    <html>
+    <head><title>Task Reminder</title></head>
+    <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+        <div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; border-top: 5px solid #f59e0b;'>
+            <h2 style='color: #f59e0b; text-align: center;'>Task Update Reminder</h2>
+            <p>Hello {$engineer_name},</p>
+            <p>This is a reminder that the following task assigned to you has not been updated recently.</p>
+            
+            <div style='background: #fffbeb; padding: 15px; border-radius: 6px; margin: 20px 0; border: 1px dashed #f59e0b;'>
+                <p style='margin: 5px 0;'><strong>Service ID:</strong> <span style='color: #0d6efd; font-weight: bold;'>{$service_id}</span></p>
+                <p style='margin: 5px 0;'><strong>Customer:</strong> {$customer_name}</p>
+                <p style='margin: 5px 0;'><strong>Device:</strong> {$device_name}</p>
+                <p style='margin: 5px 0;'><strong>Last Updated:</strong> {$last_update}</p>
+            </div>
+
+            <p>Please update the task status or add a remark in the Service Panel to keep the customer informed.</p>
+
+            <div style='text-align: center; margin: 30px 0;'>
+                <a href='https://infinitycomputer.in/service-panel/login.php' style='background: #0d6efd; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>Open Service Panel</a>
             </div>
 
             <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;'>
