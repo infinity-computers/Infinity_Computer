@@ -186,14 +186,14 @@
                             <th>Service ID</th>
                             <th>Date Received</th>
                             <th>Customer</th>
-                            <th>Device &amp; Type</th>
+                            <th>Device & Type</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="serviceTableBody">
                         <tr>
-                            <td colspan="6" class="text-center" style="padding:40px; color:#6c757d;">Loading requests...
+                            <td colspan="7" class="text-center" style="padding:40px; color:#6c757d;">Loading requests...
                             </td>
                         </tr>
                     </tbody>
@@ -211,14 +211,15 @@
                             <th>Service ID</th>
                             <th>Submitted</th>
                             <th>Customer</th>
-                            <th>Device &amp; Problem</th>
+                            <th>Device & Problem</th>
+                            <th>Engineer</th>
                             <th>Status</th>
-                            <th>Action &amp; Received</th>
+                            <th>Action & Received</th>
                         </tr>
                     </thead>
                     <tbody id="userRequestsTableBody">
                         <tr>
-                            <td colspan="6" class="text-center" style="padding:40px; color:#6c757d;">Loading requests...
+                            <td colspan="7" class="text-center" style="padding:40px; color:#6c757d;">Loading requests...
                             </td>
                         </tr>
                     </tbody>
@@ -681,8 +682,8 @@
 
                     let actionHtml = '';
                     if (req.status === 'Pending Approval') {
-                        actionHtml += `<button class="action-btn btn-accept" onclick="updateUserReq(${req.id}, 'Approved', ${req.device_received})">Approve</button>`;
-                        actionHtml += `<button class="action-btn btn-reject" onclick="updateUserReq(${req.id}, 'Rejected', ${req.device_received})">Reject</button>`;
+                        actionHtml += `<button class="action-btn btn-accept" onclick="updateUserReq(${req.id}, 'Approved', -1, '')">Approve</button>`;
+                        actionHtml += `<button class="action-btn btn-reject" onclick="updateUserReq(${req.id}, 'Rejected', -1, '')">Reject</button>`;
                     } else if (req.status === 'Approved' && req.device_received == 0) {
                         actionHtml += `<div style="font-size:0.8rem; color:#155724;">Approved. Awaiting Device.</div>`;
                     } else if (req.status === 'Approved' && req.device_received == 1) {
@@ -691,7 +692,7 @@
 
                     actionHtml += `<button class="action-btn btn-reject" style="background:#fff5f5; color:#c53030; border-color:#feb2b2; margin-left:10px;" onclick="deleteUserReq(${req.id})">Delete</button>`;
 
-                    let drCheck = `<div style="margin-top:5px; font-size:0.85rem;"><label><input type="checkbox" ${req.device_received == 1 ? 'checked disabled' : ''} onchange="updateUserReq(${req.id}, '', this.checked ? 1 : 0)"> Device Received</label></div>`;
+                    let drCheck = `<div style="margin-top:5px; font-size:0.85rem;"><label><input type="checkbox" ${req.device_received == 1 ? 'checked disabled' : ''} onchange="updateUserReq(${req.id}, '', this.checked ? 1 : 0, '')"> Device Received</label></div>`;
                     if (req.status === 'Rejected') drCheck = '';
 
                     tr.innerHTML = `
@@ -699,6 +700,15 @@
                         <td>${formatDate(req.created_at)}</td>
                         <td><div style="font-weight:600;">${req.name}</div><div style="font-size:0.85rem;">${req.phone}</div></td>
                         <td><div style="font-weight:600; font-size:0.9rem;">${req.device_type} - ${req.brand} ${req.model}</div><div style="font-size:0.85rem; color:#555;">${req.problem}</div></td>
+                        <td>
+                            <select onchange="updateUserReq(${req.id}, '', -1, this.value)" class="form-control" style="font-size:0.85rem; padding:4px;">
+                                <option value="Suraj" ${req.assigned_engineer === 'Suraj' ? 'selected' : ''}>Suraj</option>
+                                <option value="Akshar" ${req.assigned_engineer === 'Akshar' ? 'selected' : ''}>Akshar</option>
+                                <option value="Karan" ${req.assigned_engineer === 'Karan' ? 'selected' : ''}>Karan</option>
+                                <option value="Rahul" ${req.assigned_engineer === 'Rahul' ? 'selected' : ''}>Rahul</option>
+                                <option value="Paresh" ${req.assigned_engineer === 'Paresh' ? 'selected' : ''}>Paresh</option>
+                            </select>
+                        </td>
                         <td><span class="${getStatusBadgeClass(req.status)}">${req.status}</span></td>
                         <td>${actionHtml} ${drCheck}</td>
                     `;
@@ -707,12 +717,13 @@
             } catch (e) { }
         }
 
-        async function updateUserReq(id, status, deviceReceived) {
+        async function updateUserReq(id, status, deviceReceived, engineer) {
             try {
                 const fd = new FormData();
                 fd.append('id', id);
-                fd.append('status', status);
-                fd.append('device_received', deviceReceived);
+                if (status) fd.append('status', status);
+                if (deviceReceived !== -1) fd.append('device_received', deviceReceived);
+                if (engineer) fd.append('assigned_engineer', engineer);
                 await fetch('api/update_user_request_status.php', { method: 'POST', body: fd });
                 loadUserRequests();
                 loadRecentServices();

@@ -125,6 +125,13 @@ if (!in_array($_SESSION['staff_email'] ?? '', $allowed_crm_emails)) {
 
         <!-- 3. Advanced Insights Grid -->
         <div class="charts-grid" style="margin-top: 30px;">
+            <!-- Engineer Performance -->
+            <div class="chart-card" style="grid-column: span 2;">
+                <h3>👨‍🔧 Engineer Performance Overview</h3>
+                <div id="engineerStats">
+                    <p style="text-align:center; color:#64748b; padding:20px;">Loading engineer stats...</p>
+                </div>
+            </div>
             <!-- Monthly Comparison -->
             <div class="chart-card">
                 <h3>📅 Monthly Comparison</h3>

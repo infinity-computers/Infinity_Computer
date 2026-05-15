@@ -308,4 +308,51 @@ function sendEngineerReminderEmail($engineer_email, $engineer_name, $service_id,
     return @mail($engineer_email, $subject, $message, $headers);
 }
 
+/**
+ * Send an email to the owner when a service is completed
+ */
+function sendOwnerCompletionEmail($service_id, $customer_name, $device_name, $engineer_name, $assigned_at, $completed_at, $duration) {
+    $to = "icc@infinitycomputer.in";
+    $subject = "REPORT: Service Completed - {$service_id} ({$engineer_name})";
+    $headers = "MIME-Version: 1.0" . "\r\n";
+    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+    $headers .= "From: Infinity Computer System <noreply@infinitycomputer.in>" . "\r\n";
+
+    $message = "
+    <html>
+    <head><title>Service Completion Report</title></head>
+    <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+        <div style='max-width: 650px; margin: 0 auto; padding: 25px; border: 2px solid #10b981; border-radius: 12px;'>
+            <h2 style='color: #10b981; text-align: center; margin-top: 0;'>✅ Service Completion Report</h2>
+            <p>Hello Admin,</p>
+            <p>An engineer has just marked a service as <strong>COMPLETED</strong>. Below are the performance details:</p>
+            
+            <div style='background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #bbf7d0;'>
+                <table style='width: 100%; border-collapse: collapse;'>
+                    <tr><td style='padding: 8px 0; border-bottom: 1px solid #e2e8f0;'><strong>Service ID:</strong></td><td style='padding: 8px 0; border-bottom: 1px solid #e2e8f0; color: #0d6efd; font-weight: bold;'>{$service_id}</td></tr>
+                    <tr><td style='padding: 8px 0; border-bottom: 1px solid #e2e8f0;'><strong>Engineer:</strong></td><td style='padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold;'>🔧 {$engineer_name}</td></tr>
+                    <tr><td style='padding: 8px 0; border-bottom: 1px solid #e2e8f0;'><strong>Customer:</strong></td><td style='padding: 8px 0; border-bottom: 1px solid #e2e8f0;'>{$customer_name}</td></tr>
+                    <tr><td style='padding: 8px 0; border-bottom: 1px solid #e2e8f0;'><strong>Device:</strong></td><td style='padding: 8px 0; border-bottom: 1px solid #e2e8f0;'>{$device_name}</td></tr>
+                    <tr><td style='padding: 8px 0; border-bottom: 1px solid #e2e8f0;'><strong>Assigned On:</strong></td><td style='padding: 8px 0; border-bottom: 1px solid #e2e8f0;'>{$assigned_at}</td></tr>
+                    <tr><td style='padding: 8px 0; border-bottom: 1px solid #e2e8f0;'><strong>Completed On:</strong></td><td style='padding: 8px 0; border-bottom: 1px solid #e2e8f0;'>{$completed_at}</td></tr>
+                    <tr><td style='padding: 12px 0;'><strong>Time Taken:</strong></td><td style='padding: 12px 0; font-size: 1.2rem; color: #166534; font-weight: 800;'>{$duration}</td></tr>
+                </table>
+            </div>
+
+            <div style='text-align: center; margin: 20px 0;'>
+                <a href='https://infinitycomputer.in/service-panel/crm.php' style='background: #0d6efd; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>View CRM Analytics</a>
+            </div>
+
+            <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;'>
+            <p style='font-size: 12px; color: #64748b; text-align: center;'>
+                &copy; " . date('Y') . " Infinity Computer. System Performance Tracking.
+            </p>
+        </div>
+    </body>
+    </html>
+    ";
+
+    return @mail($to, $subject, $message, $headers);
+}
+
 ?>

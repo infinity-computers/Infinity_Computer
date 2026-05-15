@@ -253,6 +253,34 @@ try {
         }
     }
     $result['overdue_services'] = $overdue;
+    
+    // ============================================
+    // 11. ENGINEER PERFORMANCE
+    // ============================================
+    $engStats = [];
+    $engineers_list = ['Suraj', 'Akshar', 'Karan', 'Rahul', 'Paresh'];
+    foreach ($engineers_list as $eng) {
+        $engStats[$eng] = ['total' => 0, 'completed' => 0, 'pending' => 0];
+    }
+
+    $res = $conn->query("SELECT assigned_engineer, status, COUNT(*) as cnt FROM services WHERE assigned_engineer != '' GROUP BY assigned_engineer, status");
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $eng = $row['assigned_engineer'];
+            if (!isset($engStats[$eng])) continue;
+            
+            $cnt = intval($row['cnt']);
+            $s = strtolower($row['status']);
+            
+            $engStats[$eng]['total'] += $cnt;
+            if (in_array($s, ['completed', 'delivered', 'ready for pickup'])) {
+                $engStats[$eng]['completed'] += $cnt;
+            } else {
+                $engStats[$eng]['pending'] += $cnt;
+            }
+        }
+    }
+    $result['engineer_performance'] = $engStats;
 
     echo json_encode(['status' => 'success', 'data' => $result, 'range' => $range]);
 

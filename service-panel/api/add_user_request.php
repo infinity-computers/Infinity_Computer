@@ -21,6 +21,7 @@ try {
             image_path VARCHAR(255) DEFAULT NULL,
             status VARCHAR(50) DEFAULT 'Pending Approval',
             device_received BOOLEAN DEFAULT 0,
+            assigned_engineer VARCHAR(100) DEFAULT 'Suraj',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )");
 
@@ -28,6 +29,10 @@ try {
         $res = $conn->query("SHOW COLUMNS FROM user_service_requests LIKE 'image_path'");
         if ($res->num_rows == 0) {
             $conn->query("ALTER TABLE user_service_requests ADD COLUMN image_path VARCHAR(255) DEFAULT NULL AFTER problem");
+        }
+        $res = $conn->query("SHOW COLUMNS FROM user_service_requests LIKE 'assigned_engineer'");
+        if ($res->num_rows == 0) {
+            $conn->query("ALTER TABLE user_service_requests ADD COLUMN assigned_engineer VARCHAR(100) DEFAULT 'Suraj' AFTER device_received");
         }
 
         $name = $_POST['name'] ?? '';
@@ -96,7 +101,7 @@ try {
             exit;
         }
 
-        $stmt = $conn->prepare("INSERT INTO user_service_requests (service_id, name, phone, email, address, device_type, brand, model, problem, image_path, status, device_received) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending Approval', 0)");
+        $stmt = $conn->prepare("INSERT INTO user_service_requests (service_id, name, phone, email, address, device_type, brand, model, problem, image_path, status, device_received, assigned_engineer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending Approval', 0, 'Suraj')");
         $stmt->bind_param("ssssssssss", $service_id, $name, $phone, $email, $address, $device_type, $brand, $model, $problem, $image_path);
         $stmt->execute();
 

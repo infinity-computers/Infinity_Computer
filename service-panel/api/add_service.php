@@ -53,6 +53,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($res->num_rows == 0) {
         $conn->query("ALTER TABLE services ADD COLUMN assigned_engineer VARCHAR(255) DEFAULT NULL AFTER status");
     }
+    $res = $conn->query("SHOW COLUMNS FROM services LIKE 'assigned_at'");
+    if ($res->num_rows == 0) {
+        $conn->query("ALTER TABLE services ADD COLUMN assigned_at TIMESTAMP NULL DEFAULT NULL AFTER assigned_engineer");
+    }
 
     // Ensure email and company column exists in customers table
     $res = $conn->query("SHOW COLUMNS FROM customers LIKE 'email'");
@@ -190,9 +194,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         $date_received = date('Y-m-d');
+        $assigned_at = !empty($assigned_engineer) ? date('Y-m-d H:i:s') : null;
         
-        $stmt = $conn->prepare("INSERT INTO services (service_id, customer_id, service_type, device_name, company, problem, image_path, status, assigned_engineer, date_received) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?)");
-        $stmt->bind_param("sisssssss", $service_id, $customer_id, $service_type, $device_name, $company, $problem, $image_path, $assigned_engineer, $date_received);
+        $stmt = $conn->prepare("INSERT INTO services (service_id, customer_id, service_type, device_name, company, problem, image_path, status, assigned_engineer, assigned_at, date_received) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?)");
+        $stmt->bind_param("sissssssss", $service_id, $customer_id, $service_type, $device_name, $company, $problem, $image_path, $assigned_engineer, $assigned_at, $date_received);
         $stmt->execute();
         $service_pk = $conn->insert_id;
 

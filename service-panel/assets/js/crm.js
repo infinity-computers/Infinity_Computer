@@ -73,6 +73,7 @@ const CRM = (() => {
         renderMonthlyComparison(data.monthly_comparison);
         renderRepeatCustomers(data.repeat_customers);
         renderSLAAlerts(data.overdue_services);
+        renderEngineerStats(data.engineer_performance);
     }
 
     // ============ MONTHLY COMPARISON ============
@@ -149,6 +150,41 @@ const CRM = (() => {
         });
         html += '</tbody></table></div>';
         container.innerHTML = html;
+    }
+
+    // ============ ENGINEER STATS ============
+    function renderEngineerStats(stats) {
+        const container = document.getElementById('engineerStats');
+        if (!container || !stats) return;
+
+        let html = `<div class="table-responsive"><table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Engineer</th>
+                    <th>Total Assigned</th>
+                    <th>Completed</th>
+                    <th>Pending</th>
+                    <th>Efficiency</th>
+                </tr>
+            </thead>
+            <tbody>`;
+        
+        for (const [name, s] of Object.entries(stats)) {
+            const efficiency = s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0;
+            const effClass = efficiency >= 70 ? 'growth-positive' : (efficiency >= 40 ? 'status-diagnosing' : 'growth-negative');
+            
+            html += `<tr>
+                <td><div style="font-weight:700; color:var(--primary-dark);">🔧 ${name}</div></td>
+                <td><span class="counter" data-target="${s.total}">${s.total}</span></td>
+                <td><span style="color:var(--green); font-weight:700;">${s.completed}</span></td>
+                <td><span style="color:var(--orange); font-weight:700;">${s.pending}</span></td>
+                <td><div class="${effClass}" style="display:inline-block; padding:2px 8px; border-radius:4px; font-weight:700;">${efficiency}%</div></td>
+            </tr>`;
+        }
+        
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+        animateCounters();
     }
 
     // ============ OVERVIEW CARDS ============

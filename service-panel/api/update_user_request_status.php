@@ -7,6 +7,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $id = $_POST['id'] ?? '';
     $status = $_POST['status'] ?? ''; // Approved, Rejected
     $device_received = $_POST['device_received'] ?? '';
+    $assigned_engineer = $_POST['assigned_engineer'] ?? '';
 
     if (empty($id)) {
         echo json_encode(['status' => 'error', 'message' => 'ID is required']);
@@ -30,8 +31,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $new_status = !empty($status) ? $status : $record['status'];
         $new_dr = ($device_received !== '') ? intval($device_received) : $record['device_received'];
         
-        $stmt = $conn->prepare("UPDATE user_service_requests SET status = ?, device_received = ? WHERE id = ?");
-        $stmt->bind_param("sii", $new_status, $new_dr, $id);
+        $stmt = $conn->prepare("UPDATE user_service_requests SET status = ?, device_received = ?, assigned_engineer = ? WHERE id = ?");
+        $stmt->bind_param("sisi", $new_status, $new_dr, $assigned_engineer, $id);
         $stmt->execute();
 
         // 3. Check if Approved (or Pending) AND Device Received
@@ -73,9 +74,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 
                 $date_received = date('Y-m-d');
                 $img_path = $record['image_path']; 
+                $final_engineer = !empty($assigned_engineer) ? $assigned_engineer : $record['assigned_engineer'];
 
-                $ins_svc = $conn->prepare("INSERT INTO services (service_id, customer_id, service_type, device_name, problem, image_path, status, date_received) VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?)");
-                $ins_svc->bind_param("sisssss", $srv_id, $customer_id, $record['device_type'], $device_name, $record['problem'], $img_path, $date_received);
+                $ins_svc = $conn->prepare("INSERT INTO services (service_id, customer_id, service_type, device_name, problem, image_path, status, assigned_engineer, assigned_at, date_received) VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?, NOW(), ?)");
+                $ins_svc->bind_param("sissssss", $srv_id, $customer_id, $record['device_type'], $device_name, $record['problem'], $img_path, $final_engineer, $date_received);
                 $ins_svc->execute();
                 $service_pk = $conn->insert_id;
 
@@ -83,6 +85,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $log_stmt = $conn->prepare("INSERT INTO service_status_logs (service_id, status, remarks) VALUES (?, 'Pending', 'Moved from User Service Requests')");
                 $log_stmt->bind_param("i", $service_pk);
                 $log_stmt->execute();
+
+                // Send Email to Assigned Engineer
+                if (!empty($final_engineer)) {
+                    require_once 'email_helper.php';
+                    $engineer_emails = [
+                        'Suraj' => 'suraj@staff.infinitycomputer.in',
+                        'Akshar' => 'akshar@staff.infinitycomputer.in',
+                        'Karan' => 'karan@staff.infinitycomputer.in',
+                        'Rahul' => 'rahul@staff.infinitycomputer.in',
+                        'Paresh' => 'paresh@staff.infinitycomputer.in'
+                    ];
+                    $eng_email = $engineer_emails[$final_engineer] ?? '';
+                    if ($eng_email) {
+                        sendEngineerAssignmentEmail($eng_email, $final_engineer, $srv_id, $record['name'], $device_name, $record['problem']);
+                    }
+                }
             }
         }
 

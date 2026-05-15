@@ -36,7 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Handle Engineer Re-assignment
         $reassigned = false;
-        $stmt = $conn->prepare("SELECT status, assigned_engineer, service_id, device_name, customer_id FROM services WHERE id = ?");
+        $stmt = $conn->prepare("SELECT status, assigned_engineer, assigned_at, service_id, device_name, customer_id FROM services WHERE id = ?");
         $stmt->bind_param("i", $service_pk);
         $stmt->execute();
         $current_data = $stmt->get_result()->fetch_assoc();
@@ -46,10 +46,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if ($current_data['status'] === 'Completed') {
                 // Ignore assignment change if completed
             } else {
-                $stmt = $conn->prepare("UPDATE services SET assigned_engineer = ? WHERE id = ?");
+                $stmt = $conn->prepare("UPDATE services SET assigned_engineer = ?, assigned_at = NOW() WHERE id = ?");
                 $stmt->bind_param("si", $assigned_engineer, $service_pk);
                 $stmt->execute();
                 $reassigned = true;
+                $current_data['assigned_at'] = date('Y-m-d H:i:s'); // Update for completion email logic below
+                $current_data['assigned_engineer'] = $assigned_engineer;
 
                 // Send Email to NEW Assigned Engineer
                 require_once 'email_helper.php';
@@ -102,6 +104,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 require_once 'email_helper.php';
                 sendServiceStatusUpdateEmail($email, $srv_data['name'], $srv_id, $new_status, $srv_data['device_name']);
             }
+        }
+
+        // Handle Owner Notification on Completion
+        if ($new_status === 'Completed' && $current_data['status'] !== 'Completed') {
+            require_once 'email_helper.php';
+            $assigned_at = $current_data['assigned_at'];
+            $completed_at = date('Y-m-d H:i:s');
+            
+            $duration = "Not recorded (Unassigned)";
+            if ($assigned_at) {
+                $start = new DateTime($assigned_at);
+                $end = new DateTime($completed_at);
+                $diff = $start->diff($end);
+                $duration = "";
+                if ($diff->days > 0) $duration .= $diff->days . " days, ";
+                $duration .= $diff->h . " hours, " . $diff->i . " minutes";
+            }
+            
+            // Get customer name
+            $c_stmt = $conn->prepare("SELECT name FROM customers WHERE id = ?");
+            $c_stmt->bind_param("i", $current_data['customer_id']);
+            $c_stmt->execute();
+            $cust_name = $c_stmt->get_result()->fetch_assoc()['name'] ?? 'Customer';
+            
+            sendOwnerCompletionEmail(
+                $current_data['service_id'], 
+                $cust_name, 
+                $current_data['device_name'], 
+                $current_data['assigned_engineer'] ?: 'Unassigned', 
+                $assigned_at ?: 'N/A', 
+                $completed_at, 
+                $duration
+            );
         }
 
         $conn->commit();
