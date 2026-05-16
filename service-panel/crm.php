@@ -132,6 +132,23 @@ if (!in_array($_SESSION['staff_email'] ?? '', $allowed_crm_emails)) {
                     <p style="text-align:center; color:#64748b; padding:20px;">Loading engineer stats...</p>
                 </div>
             </div>
+
+            <!-- Work Assignment Matrix -->
+            <div class="chart-card" style="grid-column: span 2;">
+                <h3>📋 Current Work Assignment Matrix</h3>
+                <div id="workAssignments">
+                    <p style="text-align:center; color:#64748b; padding:20px;">Loading assignments...</p>
+                </div>
+            </div>
+
+            <!-- Unassigned Tasks -->
+            <div class="chart-card" style="grid-column: span 2; border: 2px dashed #f87171; background: #fffafb;">
+                <h3 style="color:#ef4444">⚠️ Unassigned Tasks (Action Required)</h3>
+                <div id="unassignedTasks">
+                    <p style="text-align:center; color:#64748b; padding:20px;">Checking for unassigned work...</p>
+                </div>
+            </div>
+
             <!-- Monthly Comparison -->
             <div class="chart-card">
                 <h3>📅 Monthly Comparison</h3>

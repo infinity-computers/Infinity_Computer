@@ -299,3 +299,57 @@
     font-size: 0.75rem;
     font-weight: 700;
 }
+
+/* Assignment Matrix Styling */
+.assignment-matrix {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.engineer-track {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px solid #e2e8f0;
+}
+.track-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+}
+.track-items {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+}
+.track-item {
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 10px;
+    min-width: 150px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+}
+.track-item:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary-color);
+}
+.track-items::-webkit-scrollbar {
+    height: 6px;
+}
+.track-items::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+.track-items::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+.track-items::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}

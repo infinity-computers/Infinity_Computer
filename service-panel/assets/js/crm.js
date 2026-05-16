@@ -74,6 +74,8 @@ const CRM = (() => {
         renderRepeatCustomers(data.repeat_customers);
         renderSLAAlerts(data.overdue_services);
         renderEngineerStats(data.engineer_performance);
+        renderWorkAssignments(data.work_assignments);
+        renderUnassignedTasks(data.unassigned_requests);
     }
 
     // ============ MONTHLY COMPARISON ============
@@ -161,9 +163,9 @@ const CRM = (() => {
             <thead>
                 <tr>
                     <th>Engineer</th>
-                    <th>Total Assigned</th>
-                    <th>Completed</th>
-                    <th>Pending</th>
+                    <th>Jobs</th>
+                    <th>Done</th>
+                    <th>Active</th>
                     <th>Efficiency</th>
                 </tr>
             </thead>
@@ -178,13 +180,90 @@ const CRM = (() => {
                 <td><span class="counter" data-target="${s.total}">${s.total}</span></td>
                 <td><span style="color:var(--green); font-weight:700;">${s.completed}</span></td>
                 <td><span style="color:var(--orange); font-weight:700;">${s.pending}</span></td>
-                <td><div class="${effClass}" style="display:inline-block; padding:2px 8px; border-radius:4px; font-weight:700;">${efficiency}%</div></td>
+                <td>
+                    <div style="width:100px; height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden; margin-bottom:4px;">
+                        <div style="width:${efficiency}%; height:100%; background:var(--primary-color);"></div>
+                    </div>
+                    <div class="${effClass}" style="display:inline-block; font-size:0.75rem; font-weight:700;">${efficiency}% Rate</div>
+                </td>
             </tr>`;
         }
         
         html += `</tbody></table></div>`;
         container.innerHTML = html;
         animateCounters();
+    }
+
+    // ============ WORK ASSIGNMENTS MATRIX ============
+    function renderWorkAssignments(assignments) {
+        const container = document.getElementById('workAssignments');
+        if (!container || !assignments) return;
+
+        if (Object.keys(assignments).length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">No active work assigned to any engineer.</p>';
+            return;
+        }
+
+        let html = '<div class="assignment-matrix">';
+        for (const [engineer, tasks] of Object.entries(assignments)) {
+            html += `
+                <div class="engineer-track">
+                    <div class="track-header">
+                        <strong>👨‍🔧 ${engineer}</strong>
+                        <span class="badge completed">${tasks.length} Active</span>
+                    </div>
+                    <div class="track-items">
+                        ${tasks.map(t => `
+                            <div class="track-item">
+                                <div style="font-weight:600; font-size:0.85rem;">${t.service_id}</div>
+                                <div style="font-size:0.75rem; color:#64748b;">${t.device_name}</div>
+                                <span class="${getStatusBadgeClass(t.status)}" style="font-size:0.65rem; padding:1px 6px;">${t.status}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // ============ UNASSIGNED TASKS ============
+    function renderUnassignedTasks(requests) {
+        const container = document.getElementById('unassignedTasks');
+        if (!container || !requests) return;
+
+        if (requests.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:var(--success); font-weight:600; padding:20px;">✅ All tasks are currently assigned!</p>';
+            return;
+        }
+
+        let html = `<div class="table-responsive"><table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Request ID</th>
+                    <th>Customer</th>
+                    <th>Device</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        requests.forEach(r => {
+            html += `
+                <tr>
+                    <td><strong>${r.service_id}</strong></td>
+                    <td>${r.name}</td>
+                    <td>${r.brand} ${r.model}</td>
+                    <td><span class="badge pending">${r.status}</span></td>
+                    <td><a href="dashboard.php" class="btn-export" style="background:var(--primary-color); font-size:0.75rem; text-decoration:none; padding:4px 8px;">Assign Now</a></td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
     }
 
     // ============ OVERVIEW CARDS ============

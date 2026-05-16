@@ -269,7 +269,6 @@ try {
         if ($res) {
             while ($row = $res->fetch_assoc()) {
                 $eng = $row['assigned_engineer'];
-                // Only count if engineer is in our list
                 if (isset($engStats[$eng])) {
                     $cnt = intval($row['cnt']);
                     $s = strtolower($row['status']);
@@ -282,10 +281,46 @@ try {
                 }
             }
         }
-    } catch (Exception $e) {
-        // Silently continue to ensure the rest of the page loads
-    }
+    } catch (Exception $e) {}
     $result['engineer_performance'] = $engStats;
+
+    // ============================================
+    // 12. CURRENT WORK ASSIGNMENTS
+    // ============================================
+    $assignments = [];
+    $res = $conn->query("
+        SELECT s.service_id, s.device_name, s.status, s.assigned_engineer, c.name as customer_name
+        FROM services s
+        JOIN customers c ON s.customer_id = c.id
+        WHERE s.status NOT IN ('Completed', 'Delivered', 'Cancelled')
+        ORDER BY s.assigned_engineer ASC, s.updated_at DESC
+    ");
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $eng = $row['assigned_engineer'] ?: 'Unassigned';
+            if (!isset($assignments[$eng])) $assignments[$eng] = [];
+            $assignments[$eng][] = $row;
+        }
+    }
+    $result['work_assignments'] = $assignments;
+
+    // ============================================
+    // 13. UNASSIGNED PENDING REQUESTS
+    // ============================================
+    $unassigned = [];
+    $res = $conn->query("
+        SELECT service_id, name, device_type, brand, model, status, created_at 
+        FROM user_service_requests 
+        WHERE (assigned_engineer IS NULL OR assigned_engineer = '') 
+        AND status != 'Rejected'
+        LIMIT 20
+    ");
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $unassigned[] = $row;
+        }
+    }
+    $result['unassigned_requests'] = $unassigned;
 
     echo json_encode(['status' => 'success', 'data' => $result, 'range' => $range]);
 
