@@ -7,7 +7,15 @@
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/email_helper.php';
 
-// Header
+// Engineer contact mapping
+$engineer_emails = [
+    'Suraj' => 'suraj@staff.infinitycomputer.in',
+    'Akshar' => 'akshar@staff.infinitycomputer.in',
+    'Karan' => 'karan@staff.infinitycomputer.in',
+    'Rahul' => 'rahul@staff.infinitycomputer.in',
+    'Paresh' => 'paresh@staff.infinitycomputer.in'
+];
+
 header('Content-Type: application/json');
 
 try {
@@ -15,10 +23,9 @@ try {
     // 2. Have an assigned engineer
     // 3. Haven't been updated in at least 1 hour
     $query = "
-        SELECT s.*, c.name as customer_name, e.email as eng_email
+        SELECT s.*, c.name as customer_name 
         FROM services s 
         JOIN customers c ON s.customer_id = c.id 
-        LEFT JOIN engineers e ON s.assigned_engineer = e.name
         WHERE s.status NOT IN ('Completed', 'Delivered', 'Cancelled') 
         AND s.assigned_engineer IS NOT NULL 
         AND s.assigned_engineer != ''
@@ -34,7 +41,7 @@ try {
     $sent_count = 0;
     while ($svc = $res->fetch_assoc()) {
         $eng_name = $svc['assigned_engineer'];
-        $eng_email = $svc['eng_email'];
+        $eng_email = $engineer_emails[$eng_name] ?? '';
 
         if ($eng_email) {
             // Send the reminder

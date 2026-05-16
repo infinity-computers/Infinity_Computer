@@ -396,7 +396,7 @@
                         </div>
                         <div class="form-group">
                             <label>Assign Engineer</label>
-                            <select name="assigned_engineer" id="assigned_engineer_select" class="form-control">
+                            <select name="assigned_engineer" class="form-control">
                                 <option value="">Select Engineer...</option>
                                 <option value="Suraj">Suraj</option>
                                 <option value="Akshar">Akshar</option>
@@ -469,8 +469,6 @@
                 ImageProcessor.setupPreview('.image-input', '#imagePreview', false);
                 ImageProcessor.initCameraVisibility('.camera-btn');
             }
-            // Load Dynamic Engineers
-            loadEngineersIntoSelect('assigned_engineer_select');
         });
 
         function switchTab(id) {

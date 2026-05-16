@@ -55,11 +55,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 // Send Email to NEW Assigned Engineer
                 require_once 'email_helper.php';
-                $stmt_eng = $conn->prepare("SELECT email FROM engineers WHERE name = ?");
-                $stmt_eng->bind_param("s", $assigned_engineer);
-                $stmt_eng->execute();
-                $eng_res = $stmt_eng->get_result()->fetch_assoc();
-                $eng_email = $eng_res['email'] ?? '';
+                $engineer_emails = [
+                    'Suraj' => 'suraj@staff.infinitycomputer.in',
+                    'Akshar' => 'akshar@staff.infinitycomputer.in',
+                    'Karan' => 'karan@staff.infinitycomputer.in',
+                    'Rahul' => 'rahul@staff.infinitycomputer.in',
+                    'Paresh' => 'paresh@staff.infinitycomputer.in'
+                ];
+                $eng_email = $engineer_emails[$assigned_engineer] ?? '';
                 if ($eng_email) {
                     // Get customer name
                     $c_stmt = $conn->prepare("SELECT name FROM customers WHERE id = ?");
