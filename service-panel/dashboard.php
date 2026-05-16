@@ -295,7 +295,7 @@
                         </div>
                         <div class="form-group">
                             <label>Assign Engineer</label>
-                            <select name="assigned_engineer" class="form-control">
+                            <select name="assigned_engineer" id="add_service_engineer_select" class="form-control">
                                 <option value="">Select Engineer...</option>
                                 <option value="Suraj">Suraj</option>
                                 <option value="Akshar">Akshar</option>
@@ -429,6 +429,10 @@
             // Init Image Processor
             ImageProcessor.setupPreview('.image-input', '#imagePreview', false);
             ImageProcessor.initCameraVisibility('.camera-btn');
+
+            // Load Dynamic Engineers
+            loadEngineersIntoSelect('add_service_engineer_select');
+            loadEngineersIntoSelect('engineerSelect');
         });
 
         function switchTab(id) {
@@ -702,11 +706,8 @@
                         <td><div style="font-weight:600; font-size:0.9rem;">${req.device_type} - ${req.brand} ${req.model}</div><div style="font-size:0.85rem; color:#555;">${req.problem}</div></td>
                         <td>
                             <select onchange="updateUserReq(${req.id}, '', -1, this.value)" class="form-control" style="font-size:0.85rem; padding:4px;">
-                                <option value="Suraj" ${req.assigned_engineer === 'Suraj' ? 'selected' : ''}>Suraj</option>
-                                <option value="Akshar" ${req.assigned_engineer === 'Akshar' ? 'selected' : ''}>Akshar</option>
-                                <option value="Karan" ${req.assigned_engineer === 'Karan' ? 'selected' : ''}>Karan</option>
-                                <option value="Rahul" ${req.assigned_engineer === 'Rahul' ? 'selected' : ''}>Rahul</option>
-                                <option value="Paresh" ${req.assigned_engineer === 'Paresh' ? 'selected' : ''}>Paresh</option>
+                                <option value="">Select...</option>
+                                ${window.allEngineers.map(eng => `<option value="${eng.name}" ${req.assigned_engineer === eng.name ? 'selected' : ''}>${eng.name}</option>`).join('')}
                             </select>
                         </td>
                         <td><span class="${getStatusBadgeClass(req.status)}">${req.status}</span></td>

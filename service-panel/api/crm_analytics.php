@@ -258,16 +258,24 @@ try {
     // 11. ENGINEER PERFORMANCE
     // ============================================
     $engStats = [];
-    $engineers_list = ['Suraj', 'Akshar', 'Karan', 'Rahul', 'Paresh'];
-    foreach ($engineers_list as $eng) {
-        $engStats[$eng] = ['total' => 0, 'completed' => 0, 'pending' => 0];
+    
+    // Fetch all active engineers first to ensure they all show up
+    $res = $conn->query("SELECT name FROM engineers WHERE is_active = 1 ORDER BY name ASC");
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $engStats[$row['name']] = ['total' => 0, 'completed' => 0, 'pending' => 0];
+        }
     }
 
-    $res = $conn->query("SELECT assigned_engineer, status, COUNT(*) as cnt FROM services WHERE assigned_engineer != '' GROUP BY assigned_engineer, status");
+    $res = $conn->query("SELECT assigned_engineer, status, COUNT(*) as cnt FROM services WHERE assigned_engineer IS NOT NULL AND assigned_engineer != '' GROUP BY assigned_engineer, status");
     if ($res) {
         while ($row = $res->fetch_assoc()) {
             $eng = $row['assigned_engineer'];
-            if (!isset($engStats[$eng])) continue;
+            
+            // If the engineer is not in the active list (e.g. deactivated), add them dynamically if they have jobs
+            if (!isset($engStats[$eng])) {
+                $engStats[$eng] = ['total' => 0, 'completed' => 0, 'pending' => 0];
+            }
             
             $cnt = intval($row['cnt']);
             $s = strtolower($row['status']);
