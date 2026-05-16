@@ -263,22 +263,27 @@ try {
         $engStats[$eng] = ['total' => 0, 'completed' => 0, 'pending' => 0];
     }
 
-    $res = $conn->query("SELECT assigned_engineer, status, COUNT(*) as cnt FROM services WHERE assigned_engineer != '' GROUP BY assigned_engineer, status");
-    if ($res) {
-        while ($row = $res->fetch_assoc()) {
-            $eng = $row['assigned_engineer'];
-            if (!isset($engStats[$eng])) continue;
-            
-            $cnt = intval($row['cnt']);
-            $s = strtolower($row['status']);
-            
-            $engStats[$eng]['total'] += $cnt;
-            if (in_array($s, ['completed', 'delivered', 'ready for pickup'])) {
-                $engStats[$eng]['completed'] += $cnt;
-            } else {
-                $engStats[$eng]['pending'] += $cnt;
+    try {
+        // Fetch stats from services table
+        $res = $conn->query("SELECT assigned_engineer, status, COUNT(*) as cnt FROM services WHERE assigned_engineer IS NOT NULL AND assigned_engineer != '' GROUP BY assigned_engineer, status");
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $eng = $row['assigned_engineer'];
+                // Only count if engineer is in our list
+                if (isset($engStats[$eng])) {
+                    $cnt = intval($row['cnt']);
+                    $s = strtolower($row['status']);
+                    $engStats[$eng]['total'] += $cnt;
+                    if (in_array($s, ['completed', 'delivered', 'ready for pickup'])) {
+                        $engStats[$eng]['completed'] += $cnt;
+                    } else {
+                        $engStats[$eng]['pending'] += $cnt;
+                    }
+                }
             }
         }
+    } catch (Exception $e) {
+        // Silently continue to ensure the rest of the page loads
     }
     $result['engineer_performance'] = $engStats;
 
