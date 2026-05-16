@@ -27,12 +27,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             throw new Exception("Record not found.");
         }
 
+        // Ensure column exists in user_service_requests
+        $res = $conn->query("SHOW COLUMNS FROM user_service_requests LIKE 'assigned_engineer'");
+        if ($res->num_rows == 0) {
+            $conn->query("ALTER TABLE user_service_requests ADD COLUMN assigned_engineer VARCHAR(100) DEFAULT 'Suraj' AFTER device_received");
+            $record['assigned_engineer'] = 'Suraj';
+        }
+
         // 2. Update record
         $new_status = !empty($status) ? $status : $record['status'];
         $new_dr = ($device_received !== '') ? intval($device_received) : $record['device_received'];
+        $final_engineer = !empty($assigned_engineer) ? $assigned_engineer : $record['assigned_engineer'];
         
         $stmt = $conn->prepare("UPDATE user_service_requests SET status = ?, device_received = ?, assigned_engineer = ? WHERE id = ?");
-        $stmt->bind_param("sisi", $new_status, $new_dr, $assigned_engineer, $id);
+        $stmt->bind_param("sisi", $new_status, $new_dr, $final_engineer, $id);
         $stmt->execute();
 
         // 3. Check if Approved (or Pending) AND Device Received
@@ -74,7 +82,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 
                 $date_received = date('Y-m-d');
                 $img_path = $record['image_path']; 
-                $final_engineer = !empty($assigned_engineer) ? $assigned_engineer : $record['assigned_engineer'];
+                
+                // Ensure columns exist in services table
+                $res = $conn->query("SHOW COLUMNS FROM services LIKE 'assigned_engineer'");
+                if ($res->num_rows == 0) {
+                    $conn->query("ALTER TABLE services ADD COLUMN assigned_engineer VARCHAR(255) DEFAULT NULL AFTER status");
+                }
+                $res = $conn->query("SHOW COLUMNS FROM services LIKE 'assigned_at'");
+                if ($res->num_rows == 0) {
+                    $conn->query("ALTER TABLE services ADD COLUMN assigned_at TIMESTAMP NULL DEFAULT NULL AFTER assigned_engineer");
+                }
 
                 $ins_svc = $conn->prepare("INSERT INTO services (service_id, customer_id, service_type, device_name, problem, image_path, status, assigned_engineer, assigned_at, date_received) VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?, NOW(), ?)");
                 $ins_svc->bind_param("sissssss", $srv_id, $customer_id, $record['device_type'], $device_name, $record['problem'], $img_path, $final_engineer, $date_received);
