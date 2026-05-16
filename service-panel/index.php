@@ -380,6 +380,7 @@
                                 <option value="Mobile Repair">Mobile Repair</option>
                                 <option value="PC Assembly">PC Assembly</option>
                                 <option value="Printer Service">Printer Service</option>
+                                <option value="CCTV Service">CCTV Service</option>
                                 <option value="Network Setup">Network Setup</option>
                                 <option value="Data Recovery">Data Recovery</option>
                                 <option value="Other">Other</option>
