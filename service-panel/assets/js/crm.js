@@ -55,6 +55,8 @@ const CRM = (() => {
                 render(json.data);
                 updateRefreshTime();
             }
+            // Fetch task analytics independently to prevent side effects
+            fetchTaskCRMData();
         } catch (e) {
             console.error('CRM fetch error:', e);
         }
@@ -553,6 +555,118 @@ const CRM = (() => {
                 }
             }, 16);
         });
+    }
+
+    async function fetchTaskCRMData() {
+        try {
+            const res = await fetch('api/task_analytics.php');
+            const json = await res.json();
+            if (json.status === 'success') {
+                renderTaskCRM(json.data);
+            }
+        } catch (e) {
+            console.error('CRM task fetch error:', e);
+        }
+    }
+
+    function renderTaskCRM(data) {
+        const escapeHtml = (str) => str ? String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;') : '';
+        
+        // 1. Render numeric counters
+        const c = data.counters;
+        const totalPending = c.pending + c.accepted + c.in_progress + c.on_hold;
+        
+        document.getElementById('crmTaskTotal').innerText = c.total;
+        document.getElementById('crmTaskPending').innerText = totalPending;
+        document.getElementById('crmTaskCompleted').innerText = c.completed;
+        document.getElementById('crmTaskOverdue').innerText = c.overdue;
+
+        // 2. Render insights values
+        document.getElementById('crmTaskAvgHours').innerText = data.avg_completion_hours + ' hrs';
+        document.getElementById('crmTaskCompRate').innerText = data.completion_rate + '%';
+        document.getElementById('crmTaskReassigned').innerText = c.reassigned;
+        document.getElementById('crmTaskActiveEng').innerText = data.most_active_engineer;
+
+        // 3. Render delayed tasks list
+        const delayedTable = document.getElementById('crmDelayedTasksTable');
+        if (delayedTable) {
+            const delayed = data.delayed_tasks;
+            if (delayed.length === 0) {
+                delayedTable.innerHTML = '<p style="text-align:center; color:var(--green); font-weight:600; padding:15px;">✅ No overdue company tasks!</p>';
+            } else {
+                let html = `<div class="table-responsive"><table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Task ID</th>
+                            <th>Title</th>
+                            <th>Engineer</th>
+                            <th>Due Date</th>
+                            <th>Priority</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+                delayed.forEach(t => {
+                    html += `
+                        <tr>
+                            <td><strong>${t.task_id}</strong></td>
+                            <td>${escapeHtml(t.title)}</td>
+                            <td>👨‍🔧 ${escapeHtml(t.assigned_to)}</td>
+                            <td><span class="days-tag" style="background:#fee2e2; color:#b91c1c;">${formatDate(t.due_date)}</span></td>
+                            <td><span class="badge" style="background:#fee2e2; color:#b91c1c; font-weight:700;">${t.priority}</span></td>
+                        </tr>
+                    `;
+                });
+                html += '</tbody></table></div>';
+                delayedTable.innerHTML = html;
+            }
+        }
+
+        // 4. Render chart
+        const ctx = document.getElementById('crmChartEngineerTasks');
+        if (ctx && typeof Chart !== 'undefined') {
+            if (charts.crmTasksChart) charts.crmTasksChart.destroy();
+            
+            const engStats = data.engineer_stats;
+            const labels = engStats.map(e => e.engineer);
+            const totals = engStats.map(e => e.total);
+            const completed = engStats.map(e => e.completed);
+
+            charts.crmTasksChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Assigned',
+                            data: totals,
+                            backgroundColor: 'rgba(31, 95, 174, 0.75)',
+                            borderColor: '#1f5fae',
+                            borderWidth: 1.5,
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Completed',
+                            data: completed,
+                            backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                            borderColor: '#10b981',
+                            borderWidth: 1.5,
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { stepSize: 1 } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 12, font: { family: 'Poppins' } } }
+                    }
+                }
+            });
+        }
     }
 
     return { init };

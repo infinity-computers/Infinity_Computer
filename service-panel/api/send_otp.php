@@ -8,6 +8,8 @@ $allowedEmails = [
     'suraj@staff.infinitycomputer.in',
     'rahul@staff.infinitycomputer.in',
     'paresh@staff.infinitycomputer.in',
+    'om@dev.infinitycomputer.in',
+    'jatin@dev.infinitycomputer.in',
     'icc@infinitycomputer.in',
     'pacifier2204@gmail.com'
 ];

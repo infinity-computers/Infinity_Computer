@@ -79,6 +79,7 @@ if (!in_array($_SESSION['staff_email'] ?? '', $allowed_crm_emails)) {
                 <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
                 <li><a href="javascript:void(0)" id="headerCrm" onclick="switchTab('crm-analytics-tab')" class="header-active">CRM Analytics</a></li>
                 <?php endif; ?>
+                <li><a href="task_management.php">Task Management</a></li>
                 <li><a href="logout.php" style="color: #dc3545; font-weight: 600; border: 1px solid #dc3545; border-radius: 5px; padding: 5px 12px; margin-left: 10px; text-decoration: none;">Logout</a></li>
             </ul>
         </div>
@@ -185,6 +186,74 @@ if (!in_array($_SESSION['staff_email'] ?? '', $allowed_crm_emails)) {
             <h3>📋 Recent Service Requests</h3>
             <div id="recentTable">
                 <p style="text-align:center; color:#64748b; padding:30px;">Loading recent services...</p>
+            </div>
+        </div>
+
+        <!-- 7. Task Management Analytics Integration -->
+        <div class="recent-section" style="margin-top: 40px; border-top: 2px solid var(--border-color); padding-top: 30px;">
+            <h3 style="font-size:1.3rem; margin-bottom: 20px; color:var(--primary-dark);">📊 Internal Tasks Analytics Dashboard</h3>
+            
+            <!-- Tasks KPI Cards Grid -->
+            <div class="overview-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                <div class="overview-card" style="border-left: 4px solid var(--primary-color); display:flex; flex-direction:column; align-items:center; background:#fff; padding:20px; border-radius:12px; box-shadow:var(--shadow);">
+                    <div style="font-size: 1.6rem; margin-bottom:5px;">📋</div>
+                    <div id="crmTaskTotal" style="font-size: 2rem; font-weight: 800; color:var(--text-dark);">0</div>
+                    <div style="font-size: 0.8rem; color: #64748b; font-weight:600; text-transform:uppercase;">Total Assigned Tasks</div>
+                </div>
+                <div class="overview-card" style="border-left: 4px solid var(--warning); display:flex; flex-direction:column; align-items:center; background:#fff; padding:20px; border-radius:12px; box-shadow:var(--shadow);">
+                    <div style="font-size: 1.6rem; margin-bottom:5px;">⏳</div>
+                    <div id="crmTaskPending" style="font-size: 2rem; font-weight: 800; color:var(--text-dark);">0</div>
+                    <div style="font-size: 0.8rem; color: #64748b; font-weight:600; text-transform:uppercase;">Pending / In Progress</div>
+                </div>
+                <div class="overview-card" style="border-left: 4px solid var(--green); display:flex; flex-direction:column; align-items:center; background:#fff; padding:20px; border-radius:12px; box-shadow:var(--shadow);">
+                    <div style="font-size: 1.6rem; margin-bottom:5px;">✅</div>
+                    <div id="crmTaskCompleted" style="font-size: 2rem; font-weight: 800; color:var(--text-dark);">0</div>
+                    <div style="font-size: 0.8rem; color: #64748b; font-weight:600; text-transform:uppercase;">Completed Tasks</div>
+                </div>
+                <div class="overview-card" style="border-left: 4px solid var(--danger); display:flex; flex-direction:column; align-items:center; background:#fff; padding:20px; border-radius:12px; box-shadow:var(--shadow);">
+                    <div style="font-size: 1.6rem; margin-bottom:5px;">⚠️</div>
+                    <div id="crmTaskOverdue" style="font-size: 2rem; font-weight: 800; color:var(--text-dark);">0</div>
+                    <div style="font-size: 0.8rem; color: #64748b; font-weight:600; text-transform:uppercase;">Overdue Tasks</div>
+                </div>
+            </div>
+
+            <!-- Charts Split -->
+            <div class="charts-grid" style="display:grid; grid-template-columns: 1.3fr 1fr; gap:25px; margin-top:25px; margin-bottom:25px;">
+                <div class="chart-card" style="background:#fff; border-radius:12px; padding:20px; border: 1px solid var(--border-color); box-shadow:var(--shadow);">
+                    <h3 style="font-size:1.05rem; font-weight:600; color:var(--primary-dark); margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">👨‍🔧 Engineer Workloads (Assigned vs Completed)</h3>
+                    <div style="position: relative; height: 260px;">
+                        <canvas id="crmChartEngineerTasks"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card" style="background:#fff; border-radius:12px; padding:20px; border: 1px solid var(--border-color); box-shadow:var(--shadow);">
+                    <h3 style="font-size:1.05rem; font-weight:600; color:var(--primary-dark); margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">🏆 Tasks Performance Insights</h3>
+                    <div style="display:flex; flex-direction:column; gap:12px; padding: 10px 0;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-light); padding:10px 15px; border-radius:8px;">
+                            <span style="font-weight:600; font-size:0.9rem; color:#475569;">Average Completion Time:</span>
+                            <strong id="crmTaskAvgHours" style="color:var(--primary-color); font-size:1.05rem;">0 hrs</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-light); padding:10px 15px; border-radius:8px;">
+                            <span style="font-weight:600; font-size:0.9rem; color:#475569;">Overall Completion Rate:</span>
+                            <strong id="crmTaskCompRate" style="color:var(--green); font-size:1.05rem;">0%</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-light); padding:10px 15px; border-radius:8px;">
+                            <span style="font-weight:600; font-size:0.9rem; color:#475569;">Total Task Reassignments:</span>
+                            <strong id="crmTaskReassigned" style="color:#8b5cf6; font-size:1.05rem;">0</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-light); padding:10px 15px; border-radius:8px;">
+                            <span style="font-weight:600; font-size:0.9rem; color:#475569;">Most Active Engineer:</span>
+                            <strong id="crmTaskActiveEng" style="color:var(--primary-dark); font-size:1.05rem;">None</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delayed/Overdue Tasks List -->
+            <div class="chart-card" style="border: 2px dashed #f87171; background: #fffafb; margin-top:20px; border-radius:12px; padding:20px; box-shadow:var(--shadow);">
+                <h3 style="color:#ef4444; font-size:1.05rem; font-weight:600; border-bottom: 1px solid #fee2e2; padding-bottom:8px; margin-bottom:15px;">⏰ Delayed & Overdue Tasks List</h3>
+                <div id="crmDelayedTasksTable">
+                    <p style="text-align:center; color:#64748b; padding:15px;">Checking for delayed tasks...</p>
+                </div>
             </div>
         </div>
         </div> <!-- End of crm-analytics-tab -->
