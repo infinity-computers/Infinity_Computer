@@ -4,7 +4,7 @@ if ($_SERVER['SERVER_NAME'] === 'localhost' || $_SERVER['SERVER_NAME'] === '127.
     define('DB_HOST', 'localhost');
     define('DB_USER', 'root');
     define('DB_PASS', '');
-    define('DB_NAME', 'infinity_computer');
+    define('DB_NAME', 'u211084505_infinity');
 } else {
     define('DB_HOST', 'localhost');
     define('DB_USER', 'u211084505_infinity');
