@@ -8,7 +8,7 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../config/db.php';
 
 // Authorized Admin Emails (Comma-separated)
-define('ADMIN_EMAILS', 'pacifier2204@gmail.com,icc@infinitycomputer.in,omshah1628@gmail.com');
+define('ADMIN_EMAILS', 'pacifier2204@gmail.com,icc@infinitycomputer.in,omshah1628@gmail.com,rathorjatin70@gmail.com');
 
 // OTP Security Settings
 define('OTP_EXPIRY_SECONDS', 30);

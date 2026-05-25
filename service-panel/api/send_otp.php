@@ -11,7 +11,8 @@ $allowedEmails = [
     'om@dev.infinitycomputer.in',
     'jatin@dev.infinitycomputer.in',
     'icc@infinitycomputer.in',
-    'pacifier2204@gmail.com'
+    'pacifier2204@gmail.com',
+    'rathorjatin70@gmail.com'
 ];
 
 $input = json_decode(file_get_contents('php://input'), true);
