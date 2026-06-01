@@ -21,8 +21,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
 
+<?php
     try {
-        $conn->begin_transaction();
+        // Fetch current status to enforce immutable states
+        $stmt = $conn->prepare("SELECT status FROM services WHERE id = ?");
+        $stmt->bind_param("i", $service_pk);
+        $stmt->execute();
+        $current_row = $stmt->get_result()->fetch_assoc();
+        $current_status = $current_row['status'] ?? '';
+        // If the service is in a terminal state, prohibit further changes unless status remains the same
+        $terminal = ['Completed', 'Ready for Pickup', 'Delivered', 'Cancelled'];
+        if (in_array($current_status, $terminal) && $new_status !== $current_status) {
+            echo json_encode(['status' => 'error', 'message' => 'Service is in a terminal state and cannot be modified']);
+            exit;
+        }
+        // If the service is in a terminal state, prohibit any modifications
+        $terminal = ['Completed', 'Ready for Pickup', 'Delivered', 'Cancelled'];
+        if (in_array($current_status, $terminal)) {
+            echo json_encode(['status' => 'error', 'message' => 'Service is in a terminal state and cannot be modified']);
+            exit;
+        }
+
+?>
 
         if(in_array($new_status, ['Completed', 'Ready for Pickup', 'Delivered'])) {
             $stmt = $conn->prepare("UPDATE services SET status = ?, date_completed = ? WHERE id = ?");
