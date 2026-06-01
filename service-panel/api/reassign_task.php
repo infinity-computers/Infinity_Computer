@@ -21,6 +21,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     $reassigned_by = $_SESSION['staff_email'] ?? 'System';
+    $is_admin = in_array(strtolower($reassigned_by), ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in']);
 
     $conn->begin_transaction();
     try {
@@ -33,6 +34,26 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if (!$task) {
             echo json_encode(['status' => 'error', 'message' => 'Task not found']);
             exit;
+        }
+
+        // Access control check
+        if (!$is_admin) {
+            require_once 'task_email_helper.php';
+            $engineer_map = getEngineerEmailMap();
+            
+            // Find engineer name for logged in email
+            $logged_in_engineer = '';
+            foreach ($engineer_map as $name => $email) {
+                if (strtolower($email) === strtolower($reassigned_by)) {
+                    $logged_in_engineer = $name;
+                    break;
+                }
+            }
+            
+            if (empty($logged_in_engineer) || strtolower($task['assigned_to']) !== strtolower($logged_in_engineer)) {
+                echo json_encode(['status' => 'error', 'message' => 'Unauthorized: You can only reassign tasks assigned to you.']);
+                exit;
+            }
         }
 
         $prev_assignee = $task['assigned_to'];

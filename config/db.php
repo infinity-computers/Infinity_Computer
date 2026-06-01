@@ -32,3 +32,8 @@ if (!$conn->select_db(DB_NAME)) {
 
 // Set charset to utf8mb4 for proper character handling
 $conn->set_charset("utf8mb4");
+
+// Synchronize timezone to Asia/Kolkata (Indian Standard Time)
+date_default_timezone_set('Asia/Kolkata');
+$conn->query("SET time_zone = '+05:30'");
+

@@ -77,6 +77,16 @@
             width: 100%;
         }
     </style>
+    <!-- Google reCAPTCHA -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <script>
+        const LOGGED_IN_EMAIL = <?php echo json_encode($_SESSION['staff_email'] ?? ''); ?>;
+        const IS_ADMIN = <?php echo json_encode(in_array(strtolower($_SESSION['staff_email'] ?? ''), ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])); ?>;
+        const ENGINEER_MAP = <?php 
+            require_once __DIR__ . '/api/task_email_helper.php';
+            echo json_encode(getEngineerEmailMap()); 
+        ?>;
+    </script>
 </head>
 <body>
     <header>
@@ -105,8 +115,13 @@
         <!-- Module Header Navigation -->
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid var(--border-color); margin-bottom:30px; flex-wrap:wrap; gap:15px;">
             <div style="display:flex; gap:5px;">
+                <?php 
+                $is_admin = in_array(strtolower($_SESSION['staff_email'] ?? ''), ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in']);
+                if ($is_admin): 
+                ?>
                 <button class="task-header-tab active" id="tabHeaderDash" onclick="switchMainTab('tasks-dashboard-view')">📊 Analytics Dashboard</button>
-                <button class="task-header-tab" id="tabHeaderList" onclick="switchMainTab('tasks-list-view')">📋 Manage Assignments</button>
+                <?php endif; ?>
+                <button class="task-header-tab <?php echo !$is_admin ? 'active' : ''; ?>" id="tabHeaderList" onclick="switchMainTab('tasks-list-view')">📋 Manage Assignments</button>
                 <button class="task-header-tab" id="tabHeaderCreate" onclick="switchMainTab('tasks-create-view')">📥 Create New Task</button>
             </div>
             <div style="font-size:0.85rem; color:#64748b; font-weight:500;">
@@ -115,7 +130,7 @@
         </div>
 
         <!-- ==================== 1. ANALYTICS DASHBOARD VIEW ==================== -->
-        <div id="tasks-dashboard-view" class="task-view-pane">
+        <div id="tasks-dashboard-view" class="task-view-pane <?php echo !$is_admin ? 'hidden' : ''; ?>">
             <!-- Stats Counters Row -->
             <div class="task-stats-grid">
                 <div class="stat-card">
@@ -162,7 +177,7 @@
         </div>
 
         <!-- ==================== 2. TASKS LIST SPLIT VIEW ==================== -->
-        <div id="tasks-list-view" class="task-view-pane hidden">
+        <div id="tasks-list-view" class="task-view-pane <?php echo !$is_admin ? '' : 'hidden'; ?>">
             <!-- Filter Bar -->
             <div class="filter-controls">
                 <div class="filter-group search-group">
@@ -302,6 +317,10 @@
                     <div class="form-group">
                         <label for="taskDescription">Task Description & Instructions <span style="color:var(--danger)">*</span></label>
                         <textarea id="taskDescription" name="description" class="form-control" rows="5" required placeholder="Describe task specific details, required parts, diagnostic status, and steps clearly..."></textarea>
+                    </div>
+
+                    <div class="form-group" style="display: flex; justify-content: center; margin-top: 20px;">
+                        <div class="g-recaptcha" data-sitekey="6LcadY0sAAAAAJZIH1jS5M3spZQ9qRn05lF0oB6d"></div>
                     </div>
 
                     <div style="text-align:center; margin-top:30px;">

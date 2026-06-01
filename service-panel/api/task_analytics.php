@@ -4,6 +4,13 @@ require_once '../../config/db.php';
 
 header('Content-Type: application/json');
 
+$staff_email = $_SESSION['staff_email'] ?? '';
+$is_admin = in_array(strtolower($staff_email), ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in']);
+if (!$is_admin) {
+    echo json_encode(['status' => 'error', 'message' => 'Unauthorized access to analytics dashboard.']);
+    exit;
+}
+
 try {
     // 1. Core counters
     $counters = [

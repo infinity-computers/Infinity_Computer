@@ -29,7 +29,9 @@ let chartInstances = {};
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Initial Data Fetch
     fetchTasks();
-    fetchDashboardStats();
+    if (document.getElementById('tabHeaderDash')) {
+        fetchDashboardStats();
+    }
 
     // 2. Set Up Event Listeners
     setupEventListeners();
@@ -324,6 +326,26 @@ function renderTaskDetailsPanel() {
         `;
     }).join('');
 
+    // Access control logic
+    const loggedInEngineerName = Object.keys(ENGINEER_MAP).find(key => ENGINEER_MAP[key].toLowerCase() === LOGGED_IN_EMAIL.toLowerCase()) || '';
+    const canModify = IS_ADMIN || (loggedInEngineerName && task.assigned_to && task.assigned_to.toLowerCase() === loggedInEngineerName.toLowerCase());
+
+    let actionButtonsHtml = '';
+    if (canModify) {
+        actionButtonsHtml = `
+            <div style="display:flex; gap:10px; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom:20px;">
+                <button class="btn" style="flex:1; padding: 10px; font-size:0.85rem; border-radius:8px; box-shadow:none;" onclick="openStatusModal('${task.task_id}', '${task.status}')">⚡ Update Status</button>
+                <button class="btn" style="flex:1; padding: 10px; font-size:0.85rem; border-radius:8px; background:#8b5cf6; box-shadow:none;" onclick="openReassignModal('${task.task_id}', '${task.assigned_to}')">🔄 Reassign Task</button>
+            </div>
+        `;
+    } else {
+        actionButtonsHtml = `
+            <div style="margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom:20px; color:#64748b; font-size:0.88rem; font-style:italic; text-align:center; background:#f8fafc; border-radius:8px; padding:12px;">
+                🔒 Read-Only: This task is assigned to <strong>${escapeHtml(task.assigned_to)}</strong>.
+            </div>
+        `;
+    }
+
     detailsContainer.innerHTML = `
         <!-- Task Header Info -->
         <div class="task-details-header">
@@ -365,10 +387,7 @@ function renderTaskDetailsPanel() {
         </div>
 
         <!-- Action Panel Buttons -->
-        <div style="display:flex; gap:10px; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom:20px;">
-            <button class="btn" style="flex:1; padding: 10px; font-size:0.85rem; border-radius:8px; box-shadow:none;" onclick="openStatusModal('${task.task_id}', '${task.status}')">⚡ Update Status</button>
-            <button class="btn" style="flex:1; padding: 10px; font-size:0.85rem; border-radius:8px; background:#8b5cf6; box-shadow:none;" onclick="openReassignModal('${task.task_id}', '${task.assigned_to}')">🔄 Reassign Task</button>
-        </div>
+        ${actionButtonsHtml}
 
         <!-- Description Box -->
         <h4 style="font-size:0.95rem; font-weight:600; color:var(--text-dark); margin-bottom:8px;">📝 Task Description</h4>
@@ -570,6 +589,16 @@ async function handleCreateTaskSubmit(e) {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
     const oldText = btn.innerText;
+
+    // Check Google reCAPTCHA
+    if (typeof grecaptcha !== 'undefined') {
+        const recaptchaResponse = grecaptcha.getResponse();
+        if (!recaptchaResponse) {
+            alert('Please complete the Google reCAPTCHA verification.');
+            return;
+        }
+    }
+
     btn.disabled = true;
     btn.innerText = 'Creating...';
 
@@ -585,18 +614,29 @@ async function handleCreateTaskSubmit(e) {
         if (json.status === 'success') {
             alert(`Task created successfully!\nTask ID: ${json.task_id}`);
             e.target.reset();
+            if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.reset();
+            }
             
             // Switch view tab to main dashboard list
             switchMainTab('tasks-list-view');
             
             // Reload all tasks
             fetchTasks();
-            fetchDashboardStats();
+            if (document.getElementById('tabHeaderDash')) {
+                fetchDashboardStats();
+            }
         } else {
             alert('Error: ' + json.message);
+            if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.reset();
+            }
         }
     } catch (err) {
         alert('Server error. Failed to submit task.');
+        if (typeof grecaptcha !== 'undefined') {
+            grecaptcha.reset();
+        }
     }
 
     btn.disabled = false;
@@ -623,7 +663,9 @@ async function handleStatusUpdateSubmit(e) {
             
             // Refresh
             fetchTasks();
-            fetchDashboardStats();
+            if (document.getElementById('tabHeaderDash')) {
+                fetchDashboardStats();
+            }
             if (tasksState.activeTaskId) {
                 fetchTaskDetails(tasksState.activeTaskId);
             }
@@ -656,7 +698,9 @@ async function handleReassignSubmit(e) {
 
             // Refresh
             fetchTasks();
-            fetchDashboardStats();
+            if (document.getElementById('tabHeaderDash')) {
+                fetchDashboardStats();
+            }
             if (tasksState.activeTaskId) {
                 fetchTaskDetails(tasksState.activeTaskId);
             }
@@ -751,7 +795,9 @@ function switchMainTab(id) {
 
 // UI Utilities
 function formatDate(dateStr, includeTime = false) {
-    const d = new Date(dateStr);
+    if (!dateStr) return '';
+    // Replace dashes with slashes for compatibility with Safari and other browsers
+    const d = new Date(dateStr.replace(/-/g, "/"));
     if (isNaN(d.getTime())) return dateStr;
 
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

@@ -6,6 +6,23 @@ require_once 'task_email_helper.php';
 header('Content-Type: application/json');
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // Verify reCAPTCHA
+    $recaptchaResponse = $_POST['g-recaptcha-response'] ?? '';
+    if (empty($recaptchaResponse)) {
+        echo json_encode(['status' => 'error', 'message' => 'Please solve the reCAPTCHA first.']);
+        exit;
+    }
+
+    $recaptchaSecret = '6LcadY0sAAAAAE-ADcAzbPWGpJLAdi1oW2jLB4Qe';
+    $verifyUrl = "https://www.google.com/recaptcha/api/siteverify?secret={$recaptchaSecret}&response={$recaptchaResponse}";
+    
+    $verifyResponse = @file_get_contents($verifyUrl);
+    $responseData = json_decode($verifyResponse);
+    if (!$responseData || !$responseData->success) {
+        echo json_encode(['status' => 'error', 'message' => 'Robot verification failed. Please try again.']);
+        exit;
+    }
+
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $phone = trim($_POST['phone'] ?? '');

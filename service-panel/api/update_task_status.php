@@ -21,11 +21,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     $done_by = $_SESSION['staff_email'] ?? 'System';
+    $is_admin = in_array(strtolower($done_by), ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in']);
 
     $conn->begin_transaction();
     try {
-        // Fetch current status
-        $stmt_curr = $conn->prepare("SELECT status FROM tasks WHERE task_id = ?");
+        // Fetch current status and assignment details
+        $stmt_curr = $conn->prepare("SELECT status, assigned_to FROM tasks WHERE task_id = ?");
         $stmt_curr->bind_param("s", $task_id);
         $stmt_curr->execute();
         $curr_res = $stmt_curr->get_result()->fetch_assoc();
@@ -33,6 +34,26 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if (!$curr_res) {
             echo json_encode(['status' => 'error', 'message' => 'Task not found']);
             exit;
+        }
+
+        // Access control check
+        if (!$is_admin) {
+            require_once 'task_email_helper.php';
+            $engineer_map = getEngineerEmailMap();
+            
+            // Find engineer name for logged in email
+            $logged_in_engineer = '';
+            foreach ($engineer_map as $name => $email) {
+                if (strtolower($email) === strtolower($done_by)) {
+                    $logged_in_engineer = $name;
+                    break;
+                }
+            }
+            
+            if (empty($logged_in_engineer) || strtolower($curr_res['assigned_to']) !== strtolower($logged_in_engineer)) {
+                echo json_encode(['status' => 'error', 'message' => 'Unauthorized: You can only update tasks assigned to you.']);
+                exit;
+            }
         }
 
         $prev_status = $curr_res['status'];
