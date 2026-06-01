@@ -617,7 +617,7 @@
                     msg.innerHTML = `<span style="color:var(--danger)">Error: ${json.message}</span>`;
                 }
             } catch (err) {
-                alert('Update failed');
+                document.getElementById('updateMsg').innerHTML = '<span style="color:var(--danger)">Error: Update failed. Please try again.</span>';
             }
             btn.disabled = false;
             btn.innerText = 'Save Update';
@@ -729,7 +729,9 @@
                 await fetch('api/update_user_request_status.php', { method: 'POST', body: fd });
                 loadUserRequests();
                 loadRecentServices();
-            } catch (e) { alert('Update failed'); }
+            } catch (err) {
+    document.getElementById('updateMsg').innerHTML = '<span style="color:var(--danger)">Error: Update failed. Please try again.</span>';
+}
         }
 
         async function deleteUserReq(id) {
