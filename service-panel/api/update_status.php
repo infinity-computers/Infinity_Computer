@@ -73,14 +73,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 echo json_encode(['status' => 'error', 'message' => 'You are not the assigned engineer for this service.']);
                 exit;
             }
-            // Non-admin cannot change engineer assignment
-            if (!empty($assigned_engineer) && $current_data['assigned_engineer'] !== $assigned_engineer) {
-                echo json_encode(['status' => 'error', 'message' => 'Only admins can reassign the engineer.']);
-                exit;
-            }
         }
 
         if ($current_data && !empty($assigned_engineer) && $current_data['assigned_engineer'] !== $assigned_engineer) {
+            // Only admins can reassign the engineer
+            if (!$is_admin) {
+                echo json_encode(['status' => 'error', 'message' => 'Only admins can reassign the engineer.']);
+                exit;
+            }
             // Check if status is Completed
             if ($current_data['status'] === 'Completed') {
                 // Ignore assignment change if completed
