@@ -56,29 +56,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Handle Engineer Re-assignment
         $reassigned = false;
+
+        // Fetch current service data first
         $stmt = $conn->prepare("SELECT status, assigned_engineer, assigned_at, service_id, device_name, customer_id FROM services WHERE id = ?");
-
-
-// Permission check: only assigned engineer or admins can modify
-$session_email = $_SESSION['staff_email'] ?? '';
-$admin_emails = ['icc@infinitycomputer.in', 'suraj@staff.infinitycomputer.in'];
-if (!in_array($session_email, $admin_emails)) {
-    $assigned_eng = $current_data['assigned_engineer'] ?? '';
-    if ($assigned_eng && $assigned_eng !== $session_email) {
-        echo json_encode(['status' => 'error', 'message' => 'You are not the assigned engineer for this service.']);
-        exit;
-    }
-    // Non‑admin cannot change engineer assignment
-    if (!empty($assigned_engineer) && $current_data['assigned_engineer'] !== $assigned_engineer) {
-        echo json_encode(['status' => 'error', 'message' => 'Only admins can reassign the engineer.']);
-        exit;
-    }
-}
-// Continue with existing $current_data usage
-
         $stmt->bind_param("i", $service_pk);
         $stmt->execute();
         $current_data = $stmt->get_result()->fetch_assoc();
+
+        // Permission check: only assigned engineer or admins can modify
+        $session_email = $_SESSION['staff_email'] ?? '';
+        $admin_emails = ['icc@infinitycomputer.in', 'suraj@staff.infinitycomputer.in'];
+        $is_admin = in_array($session_email, $admin_emails);
+        if (!$is_admin) {
+            // Must be the assigned engineer
+            if (($current_data['assigned_engineer'] ?? '') !== $session_email) {
+                echo json_encode(['status' => 'error', 'message' => 'You are not the assigned engineer for this service.']);
+                exit;
+            }
+            // Non-admin cannot change engineer assignment
+            if (!empty($assigned_engineer) && $current_data['assigned_engineer'] !== $assigned_engineer) {
+                echo json_encode(['status' => 'error', 'message' => 'Only admins can reassign the engineer.']);
+                exit;
+            }
+        }
 
         if ($current_data && !empty($assigned_engineer) && $current_data['assigned_engineer'] !== $assigned_engineer) {
             // Check if status is Completed
