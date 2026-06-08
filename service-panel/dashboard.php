@@ -157,6 +157,38 @@
             </ul>
         </div>
     </header>
+<?php
+// Error log display (temporary debug)
+$logDir = __DIR__ . '/../logs';
+function getLogContents(string $filePath): string {
+    if (is_file($filePath) && filesize($filePath) > 0) {
+        return nl2br(htmlspecialchars(file_get_contents($filePath)));
+    }
+    return '';
+}
+$updateStatusLog = getLogContents($logDir . '/update_status_error.log');
+$updateTaskLog = getLogContents($logDir . '/update_task_status_error.log');
+if ($updateStatusLog !== '' || $updateTaskLog !== '') {
+    echo '<div style="
+        background:#fff5f5;
+        border:2px solid #ef4444;
+        border-radius:8px;
+        color:#b91c1c;
+        padding:15px;
+        margin:20px auto;
+        max-width:900px;
+        font-family:var(--font-family,Arial,sans-serif);
+        line-height:1.4;">
+    <h3 style="margin-top:0; font-size:1.2rem;">&#128165; Server-side error log</h3>';
+    if ($updateStatusLog !== '') {
+        echo '<strong>update_status.php:</strong><br>' . $updateStatusLog . '<hr style="border-color:#ef4444;margin:12px 0;">';
+    }
+    if ($updateTaskLog !== '') {
+        echo '<strong>update_task_status.php:</strong><br>' . $updateTaskLog;
+    }
+    echo '</div>';
+}
+?>
 
     <div class="container">
         <div class="tabs">
