@@ -629,6 +629,7 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
 
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
+            const msg = document.getElementById('updateMsg');
 
             try {
                 const res = await fetch('api/update_status.php', {
@@ -636,12 +637,24 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                const json = await res.json();
-                const msg = document.getElementById('updateMsg');
+                // Read raw text first so we can debug if it's not JSON
+                const rawText = await res.text();
+                let json;
+                try {
+                    json = JSON.parse(rawText);
+                } catch (parseErr) {
+                    // Server returned non-JSON (PHP error/warning) — show it raw
+                    msg.innerHTML = `<div style="color:var(--danger); background:#fff5f5; border:1px solid #ef4444; padding:10px; border-radius:6px; font-size:0.85rem; max-height:200px; overflow:auto; text-align:left;">
+                        <strong>Server returned invalid JSON (HTTP ${res.status}):</strong><br>
+                        <pre style="white-space:pre-wrap; margin:5px 0 0;">${rawText.substring(0, 2000)}</pre>
+                    </div>`;
+                    btn.disabled = false;
+                    btn.innerText = 'Save Update';
+                    return;
+                }
                 if (json.status === 'success') {
                     msg.innerHTML = `<span style="color:var(--success)">${json.message}</span>`;
                     e.target.elements['remarks'].value = '';
-                    // Refresh details view
                     const svcId = document.getElementById('svcIdDisplay').innerText.split(' ')[0];
                     viewDetails(svcId);
                     setTimeout(() => msg.innerHTML = '', 3000);
@@ -649,7 +662,7 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
                     msg.innerHTML = `<span style="color:var(--danger)">Error: ${json.message}</span>`;
                 }
             } catch (err) {
-                document.getElementById('updateMsg').innerHTML = '<span style="color:var(--danger)">Error: Update failed. Please try again.</span>';
+                msg.innerHTML = `<span style="color:var(--danger)">Network Error: ${err.message}</span>`;
             }
             btn.disabled = false;
             btn.innerText = 'Save Update';
