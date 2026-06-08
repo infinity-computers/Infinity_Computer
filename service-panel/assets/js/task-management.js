@@ -669,9 +669,12 @@ async function handleStatusUpdateSubmit(e) {
             if (tasksState.activeTaskId) {
                 fetchTaskDetails(tasksState.activeTaskId);
             }
-        } else {
-            alert('Error: ' + json.message);
-        }
+
+            } else {
+                // Show detailed error info if available (temporary debug)
+                const errMsg = json.details ? json.message + ' – Details: ' + json.details : json.message;
+                alert('Error: ' + errMsg);
+            }
     } catch (err) {
         alert('Request failed');
     }
