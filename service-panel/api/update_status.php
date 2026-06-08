@@ -9,7 +9,12 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-require_once '../config/db.php';
+// Initialize log directory for debugging
+$logDir = __DIR__ . '/../../logs';
+if (!is_dir($logDir)) {
+    mkdir($logDir, 0755, true);
+}
+
 
 header('Content-Type: application/json');
 
@@ -35,7 +40,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // 2️⃣  START TRANSACTION (must be before any DB work)
     // --------------------------------------------------
     $conn->autocommit(FALSE);
-    try {
+    // Log incoming request for debugging
+$debugMsg = "[" . date('c') . "] Request data: " . json_encode($data) . " Session: " . ($_SESSION['staff_email'] ?? 'none') . "\n";
+file_put_contents($logDir . '/update_status_debug.log', $debugMsg, FILE_APPEND);
+
+try {
         // Fetch current status to enforce immutable states
         $stmt = $conn->prepare("SELECT status FROM services WHERE id = ?");
         $stmt->bind_param("i", $service_pk);
@@ -197,10 +206,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } catch(Exception $e) {
         $conn->rollback();
         // Log detailed error information for debugging (ensure log directory exists)
-        $logDir = __DIR__ . '/../../logs';
-        if (!is_dir($logDir)) {
-            mkdir($logDir, 0755, true);
-        }
+        // $logDir is already initialized above
         $logMsg = "[" . date('c') . "] Update error: " . $e->getMessage() . "\nStack trace:\n" . $e->getTraceAsString() . "\n";
         file_put_contents($logDir . '/update_status_error.log', $logMsg, FILE_APPEND);
         // Rollback any partial changes

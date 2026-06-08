@@ -1,8 +1,16 @@
 <?php
+// Debug logging setup
+$logDir = __DIR__ . '/../../logs';
+if (!is_dir($logDir)) { mkdir($logDir, 0755, true); }
+
 include __DIR__ . '/../auth_guard.php';
 require_once '../../config/db.php';
 
 header('Content-Type: application/json');
+
+// Log incoming POST data for debugging
+$debugMsg = "[" . date('c') . "] update_task_status.php POST: " . json_encode($_POST) . "\n";
+file_put_contents($logDir . '/update_task_status_debug.log', $debugMsg, FILE_APPEND);
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $task_id = trim($_POST['task_id'] ?? '');
@@ -96,6 +104,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     } catch (Exception $e) {
         $conn->rollback();
+        // Log exception details
+        $errorLog = "[" . date('c') . "] Exception: " . $e->getMessage() . "\nStack trace:\n" . $e->getTraceAsString() . "\n";
+        file_put_contents($logDir . '/update_task_status_error.log', $errorLog, FILE_APPEND);
         echo json_encode(['status' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
     }
 } else {
