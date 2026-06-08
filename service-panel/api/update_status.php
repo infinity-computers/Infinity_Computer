@@ -1,13 +1,14 @@
 <?php
-// Start session (needed for permission checks)
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+// --------------------------------------------------
+// 1️⃣  AUTH & DEBUG (restored auth guard and debugging)
+// --------------------------------------------------
+include __DIR__ . '/../auth_guard.php'; // restores session & login check
+
 // Enable full error reporting and MySQLi strict mode for debugging
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-?>
+
 require_once '../config/db.php';
 
 header('Content-Type: application/json');
@@ -29,7 +30,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
 
-<?php
+
+    // --------------------------------------------------
+    // 2️⃣  START TRANSACTION (must be before any DB work)
+    // --------------------------------------------------
+    $conn->autocommit(FALSE);
     try {
         // Fetch current status to enforce immutable states
         $stmt = $conn->prepare("SELECT status FROM services WHERE id = ?");
@@ -50,7 +55,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             exit;
         }
 
-?>
+>
 
         if(in_array($new_status, ['Completed', 'Ready for Pickup', 'Delivered'])) {
             $stmt = $conn->prepare("UPDATE services SET status = ?, date_completed = ? WHERE id = ?");
@@ -186,13 +191,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             );
         }
 
-        $conn->autocommit(FALSE);
+                // Commit transaction after all DB work is done
+        $conn->commit();
         echo json_encode(['status' => 'success', 'message' => 'Status updated successfully']);
     } catch(Exception $e) {
         $conn->rollback();
-        // Log detailed error information for debugging
+        // Log detailed error information for debugging (ensure log directory exists)
+        $logDir = __DIR__ . '/../../logs';
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
         $logMsg = "[" . date('c') . "] Update error: " . $e->getMessage() . "\nStack trace:\n" . $e->getTraceAsString() . "\n";
-        file_put_contents(__DIR__ . '/../../logs/update_status_error.log', $logMsg, FILE_APPEND);
+        file_put_contents($logDir . '/update_status_error.log', $logMsg, FILE_APPEND);
+        // Rollback any partial changes
+        $conn->rollback();
         echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
     }
 } else {
