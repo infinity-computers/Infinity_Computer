@@ -64,8 +64,6 @@ try {
             exit;
         }
 
->
-
         if(in_array($new_status, ['Completed', 'Ready for Pickup', 'Delivered'])) {
             $stmt = $conn->prepare("UPDATE services SET status = ?, date_completed = ? WHERE id = ?");
             $date = date('Y-m-d');
@@ -209,8 +207,6 @@ try {
         // $logDir is already initialized above
         $logMsg = "[" . date('c') . "] Update error: " . $e->getMessage() . "\nStack trace:\n" . $e->getTraceAsString() . "\n";
         file_put_contents($logDir . '/update_status_error.log', $logMsg, FILE_APPEND);
-        // Rollback any partial changes
-        $conn->rollback();
         echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
     }
 } else {
