@@ -1,4 +1,11 @@
 <?php
+// Start session (needed for permission checks)
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+// Enable full error reporting and MySQLi strict mode for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 ?>
 require_once '../config/db.php';
@@ -183,6 +190,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         echo json_encode(['status' => 'success', 'message' => 'Status updated successfully']);
     } catch(Exception $e) {
         $conn->rollback();
+        // Log detailed error information for debugging
+        $logMsg = "[" . date('c') . "] Update error: " . $e->getMessage() . "\nStack trace:\n" . $e->getTraceAsString() . "\n";
+        file_put_contents(__DIR__ . '/../../logs/update_status_error.log', $logMsg, FILE_APPEND);
         echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
     }
 } else {
