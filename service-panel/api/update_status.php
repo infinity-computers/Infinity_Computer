@@ -3,6 +3,7 @@
 // 1️⃣  AUTH & DEBUG (restored auth guard and debugging)
 // --------------------------------------------------
 include __DIR__ . '/../auth_guard.php'; // restores session & login check
+require_once '../config/db.php';
 
 // Enable full error reporting and MySQLi strict mode for debugging
 error_reporting(E_ALL);
