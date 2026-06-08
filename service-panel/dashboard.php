@@ -405,7 +405,7 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
 
                 <div class="card"
                     style="padding:35px; background:var(--bg-light); border:0; box-shadow:inset 0 2px 4px rgba(0,0,0,0.02), var(--shadow);">
-                    <div class="card-title" style="border-bottom-color:#cbd5e1;">Update Status</div>
+                    <div class="card-title" style="border-bottom-color:#cbd5e1;">Helo Update Status</div>
                     <form id="updateStatusForm">
                         <input type="hidden" id="internalId" name="id">
                         <div class="form-group">
