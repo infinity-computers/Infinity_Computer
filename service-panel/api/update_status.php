@@ -1,5 +1,6 @@
-<?php include __DIR__ . '/../auth_guard.php'; ?>
 <?php
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+?>
 require_once '../config/db.php';
 
 header('Content-Type: application/json');
@@ -178,7 +179,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             );
         }
 
-        $conn->commit();
+        $conn->autocommit(FALSE);
         echo json_encode(['status' => 'success', 'message' => 'Status updated successfully']);
     } catch(Exception $e) {
         $conn->rollback();
