@@ -107,7 +107,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         // Log exception details
         $errorLog = "[" . date('c') . "] Exception: " . $e->getMessage() . "\nStack trace:\n" . $e->getTraceAsString() . "\n";
         file_put_contents($logDir . '/update_task_status_error.log', $errorLog, FILE_APPEND);
-        echo json_encode(['status' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
+        // Return the error log details in the JSON response (temporary debug)
+        echo json_encode(['status' => 'error', 'message' => 'Error: ' . $e->getMessage(), 'details' => $errorLog]);
     }
 } else {
     echo json_encode(['status' => 'error', 'message' => 'Invalid request method']);
