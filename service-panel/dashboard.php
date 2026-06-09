@@ -537,7 +537,7 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><strong style="color:var(--primary-dark); font-size:1.05rem;">${svc.service_id}</strong></td>
-                    <td>${formatDate(svc.date_received)}</td>
+                    <td>${formatDate(svc.created_at || svc.date_received)}</td>
                     <td><div style="font-weight:600;">${svc.name}</div><div class="text-muted" style="font-size:0.9rem;">${svc.phone}</div></td>
                     <td><div style="font-weight:600;">${svc.device_name}</div><div class="text-muted" style="font-size:0.9rem;">${svc.service_type}</div></td>
                     <td><span class="${getStatusBadgeClass(svc.status)}">${svc.status}</span><br><small style="color:#666;">${svc.assigned_engineer ? '🔧 ' + svc.assigned_engineer : '<i>Unassigned</i>'}</small></td>
@@ -585,7 +585,7 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
                             <div class="info-item"><label>Phone</label><div class="text-muted">${svc.phone}</div></div>
                             <div class="info-item"><label>Service Type</label><div>${svc.service_type}</div></div>
                             <div class="info-item"><label>Device Model</label><div style="font-weight:600;">${svc.device_name}</div></div>
-                            <div class="info-item"><label>Date Received</label><div>${formatDate(svc.date_received)}</div></div>
+                            <div class="info-item"><label>Date Received</label><div>${formatDate(svc.created_at || svc.date_received)}</div></div>
                             <div class="info-item"><label>Assigned Engineer</label><div style="font-weight:700; color:var(--primary); font-size:1.1rem;">🔧 ${svc.assigned_engineer || 'Not Assigned'}</div></div>
                         </div>
                         <div class="mt-4 info-item" style="background:#fff; border:1px solid var(--border-color);">
