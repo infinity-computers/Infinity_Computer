@@ -405,7 +405,7 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
 
                 <div class="card"
                     style="padding:35px; background:var(--bg-light); border:0; box-shadow:inset 0 2px 4px rgba(0,0,0,0.02), var(--shadow);">
-                    <div class="card-title" style="border-bottom-color:#cbd5e1;">Helo Update Status</div>
+                    <div class="card-title" style="border-bottom-color:#cbd5e1;">Update Status</div>
                     <form id="updateStatusForm">
                         <input type="hidden" id="internalId" name="id">
                         <div class="form-group">
@@ -455,6 +455,7 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
     <script src="assets/js/image-processor.js?v=1.4"></script>
     <script src="assets/js/main.js"></script>
     <script>
+        const IS_ADMIN = <?php echo json_encode(in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])); ?>;
         document.addEventListener('DOMContentLoaded', () => {
             loadRecentServices();
             loadUserRequests();
@@ -568,10 +569,10 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
                     document.getElementById('statusSelect').value = svc.status;
                     document.getElementById('engineerSelect').value = svc.assigned_engineer || '';
 
-                    // Disable engineer selection if Completed
+                    // Disable engineer selection if Completed (unless admin)
                     const engSelect = document.getElementById('engineerSelect');
                     const lockMsg = document.getElementById('engLockMsg');
-                    if (svc.status === 'Completed') {
+                    if (svc.status === 'Completed' && !IS_ADMIN) {
                         engSelect.disabled = true;
                         lockMsg.style.display = 'block';
                     } else {
