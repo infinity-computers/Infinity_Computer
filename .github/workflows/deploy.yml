@@ -1,0 +1,48 @@
+name: Auto Deploy
+
+# Trigger deployment whenever code is pushed to the main branch.
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to server
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      # 1. Check out the latest code so subsequent steps can use it.
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Deploy by SSHing into the production server and running git pull.
+      #
+      #    Required GitHub Secrets (Settings → Secrets and variables → Actions):
+      #      SSH_PRIVATE_KEY  – private key whose public key is in ~/.ssh/authorized_keys on the server
+      #      SSH_HOST         – hostname or IP of the production server
+      #      SSH_USER         – SSH login username
+      #      SSH_PORT         – (optional) SSH port, defaults to 22
+      #      DEPLOY_PATH      – absolute path to the repository on the server
+      #                         e.g. /var/www/html/Infinity_Computer
+      # NOTE: For stronger supply-chain security you can pin this action to
+      # a specific commit SHA instead of a version tag, e.g.:
+      #   uses: appleboy/ssh-action@<commit-sha>
+      # Find the SHA at: https://github.com/appleboy/ssh-action/releases
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+            # Use fetch + reset to ensure a clean deployment even if
+            # the server has local changes or conflicts.
+            git fetch origin main
+            git reset --hard origin/main
+            echo "Deployment completed at $(date)"

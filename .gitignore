@@ -1,0 +1,6 @@
+# Auto-generated deployment log – never commit this
+deploy.log
+
+# Uploaded files from the web app
+uploads/*
+!uploads/.gitkeep
