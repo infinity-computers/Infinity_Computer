@@ -15,6 +15,8 @@ $allowedEmails = [
     'rathorjatin70@gmail.com'
 ];
 
+require_once __DIR__ . '/../config/db.php';
+
 $input = json_decode(file_get_contents('php://input'), true);
 $email = trim(strtolower($input['email'] ?? ''));
 
@@ -23,11 +25,27 @@ if (empty($email)) {
     exit;
 }
 
-if (!in_array($email, $allowedEmails)) {
-    echo json_encode(['status' => 'error', 'message' => 'Unauthorized email address']);
-    exit;
+// Fetch user from engineers table
+$stmt = $conn->prepare("SELECT name FROM engineers WHERE email = ?");
+$staffName = '';
+if ($stmt) {
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $staffData = $result->fetch_assoc();
+    if ($staffData) {
+        $staffName = $staffData['name'];
+    }
 }
-$staffName = ucfirst(explode('@', $email)[0]);
+
+// Fallback check
+if (empty($staffName)) {
+    if (!in_array($email, $allowedEmails)) {
+        echo json_encode(['status' => 'error', 'message' => 'Unauthorized email address']);
+        exit;
+    }
+    $staffName = ucfirst(explode('@', $email)[0]);
+}
 
 // Cooldown check (30 seconds between sends)
 if (isset($_SESSION['otp_last_sent']) && (time() - $_SESSION['otp_last_sent']) < 30) {

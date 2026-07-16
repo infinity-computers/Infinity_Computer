@@ -20,7 +20,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
     // Fetch all engineers
-    $query = "SELECT id, name, email, created_at FROM engineers ORDER BY name ASC";
+    $query = "SELECT id, name, email, position, created_at FROM engineers ORDER BY name ASC";
     $result = $conn->query($query);
 
     $engineersList = [];
@@ -56,17 +56,18 @@ if ($method === 'POST' && isset($input['action']) && $input['action'] === 'delet
 if ($method === 'POST') {
     $id = intval($input['id'] ?? 0);
     $name = trim($input['name'] ?? '');
-    $email = trim($input['email'] ?? '');
+    $email = trim(strtolower($input['email'] ?? ''));
+    $position = trim($input['position'] ?? 'staff');
 
-    if (empty($name)) {
-        echo json_encode(['status' => 'error', 'message' => 'Name is required.']);
+    if (empty($name) || empty($email) || empty($position)) {
+        echo json_encode(['status' => 'error', 'message' => 'Name, email, and position are required.']);
         exit;
     }
 
     if ($id > 0) {
         // Update
-        $stmt = $conn->prepare("UPDATE engineers SET name = ?, email = ? WHERE id = ?");
-        $stmt->bind_param("ssi", $name, $email, $id);
+        $stmt = $conn->prepare("UPDATE engineers SET name = ?, email = ?, position = ? WHERE id = ?");
+        $stmt->bind_param("sssi", $name, $email, $position, $id);
         if ($stmt->execute()) {
             echo json_encode(['status' => 'success', 'message' => 'Engineer updated successfully.']);
         } else {
@@ -74,8 +75,8 @@ if ($method === 'POST') {
         }
     } else {
         // Insert
-        $stmt = $conn->prepare("INSERT INTO engineers (name, email) VALUES (?, ?)");
-        $stmt->bind_param("ss", $name, $email);
+        $stmt = $conn->prepare("INSERT INTO engineers (name, email, position) VALUES (?, ?, ?)");
+        $stmt->bind_param("sss", $name, $email, $position);
         if ($stmt->execute()) {
             echo json_encode(['status' => 'success', 'message' => 'Engineer added successfully.']);
         } else {

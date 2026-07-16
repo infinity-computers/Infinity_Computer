@@ -135,7 +135,7 @@ if (!in_array($_SESSION['staff_email'] ?? '', $admins)) {
                 <li><a href="dashboard.php">Dashboard</a></li>
                 <li><a href="crm.php">CRM Analytics</a></li>
                 <li><a href="task_management.php">Task Management</a></li>
-                <li><a href="engineers_management.php" class="header-active" style="color: var(--primary-color);">Manage Engineers</a></li>
+                <li><a href="engineers_management.php" class="header-active" style="color: var(--primary-color);">Manage Staff</a></li>
                 <li><a href="logout.php" style="color: #dc3545; font-weight: 600; border: 1px solid #dc3545; border-radius: 5px; padding: 5px 12px; margin-left: 10px; text-decoration: none;">Logout</a></li>
             </ul>
         </div>
@@ -143,8 +143,8 @@ if (!in_array($_SESSION['staff_email'] ?? '', $admins)) {
 
     <div class="container" style="max-width: 1000px; margin-top: 40px; margin-bottom: 40px;">
         <div class="page-header">
-            <h2>Engineers Management</h2>
-            <button class="btn btn-primary" onclick="openAddModal()">+ Add Engineer</button>
+            <h2>Staff & Engineers Management</h2>
+            <button class="btn btn-primary" onclick="openAddModal()">+ Add New Staff</button>
         </div>
 
         <table class="eng-table">
@@ -153,11 +153,12 @@ if (!in_array($_SESSION['staff_email'] ?? '', $admins)) {
                     <th>ID</th>
                     <th>Name</th>
                     <th>Email</th>
+                    <th>Position</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="engTableBody">
-                <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
+                <tr><td colspan="5" style="text-align:center;">Loading...</td></tr>
             </tbody>
         </table>
     </div>
@@ -166,22 +167,31 @@ if (!in_array($_SESSION['staff_email'] ?? '', $admins)) {
     <div class="modal-overlay" id="engModal">
         <div class="modal">
             <div class="modal-header">
-                <h3 class="modal-title" id="modalTitle">Add Engineer</h3>
+                <h3 class="modal-title" id="modalTitle">Add Staff</h3>
                 <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
             <form id="engForm" onsubmit="handleEngSubmit(event)">
                 <input type="hidden" id="engId" name="id">
                 <div class="form-group">
-                    <label>Engineer Name</label>
+                    <label>Full Name</label>
                     <input type="text" id="engName" name="name" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label>Email Address (Optional)</label>
-                    <input type="email" id="engEmail" name="email" class="form-control">
+                    <label>Email Address</label>
+                    <input type="email" id="engEmail" name="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Position</label>
+                    <select id="engPosition" name="position" class="form-control" required>
+                        <option value="staff">Staff</option>
+                        <option value="admin">Admin</option>
+                        <option value="engineer">Engineer</option>
+                        <option value="developer">Developer</option>
+                    </select>
                 </div>
                 <div style="margin-top: 25px; text-align: right;">
                     <button type="button" class="btn" style="background: #e2e8f0; color: #333;" onclick="closeModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="saveBtn">Save Engineer</button>
+                    <button type="submit" class="btn btn-primary" id="saveBtn">Save User</button>
                 </div>
             </form>
         </div>
@@ -212,7 +222,7 @@ if (!in_array($_SESSION['staff_email'] ?? '', $admins)) {
             tbody.innerHTML = '';
             
             if(engList.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No engineers found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No staff found</td></tr>';
                 return;
             }
 
@@ -223,6 +233,7 @@ if (!in_array($_SESSION['staff_email'] ?? '', $admins)) {
                     <td>${eng.id}</td>
                     <td style="font-weight: 500;">${eng.name}</td>
                     <td>${eng.email || '-'}</td>
+                    <td style="text-transform: capitalize;">${eng.position || 'Staff'}</td>
                     <td>
                         <button class="action-btn edit" onclick='openEditModal(${JSON.stringify(eng)})' title="Edit">✏️</button>
                         <button class="action-btn delete" onclick="deleteEngineer(${eng.id}, '${eng.name}')" title="Delete">🗑️</button>
@@ -233,17 +244,19 @@ if (!in_array($_SESSION['staff_email'] ?? '', $admins)) {
         }
 
         function openAddModal() {
-            document.getElementById('modalTitle').innerText = 'Add New Engineer';
+            document.getElementById('modalTitle').innerText = 'Add New Staff';
             document.getElementById('engForm').reset();
             document.getElementById('engId').value = '';
+            document.getElementById('engPosition').value = 'staff';
             document.getElementById('engModal').style.display = 'flex';
         }
 
         function openEditModal(eng) {
-            document.getElementById('modalTitle').innerText = 'Edit Engineer';
+            document.getElementById('modalTitle').innerText = 'Edit Staff';
             document.getElementById('engId').value = eng.id;
             document.getElementById('engName').value = eng.name;
             document.getElementById('engEmail').value = eng.email || '';
+            document.getElementById('engPosition').value = eng.position || 'staff';
             document.getElementById('engModal').style.display = 'flex';
         }
 
@@ -260,7 +273,8 @@ if (!in_array($_SESSION['staff_email'] ?? '', $admins)) {
             const formData = {
                 id: document.getElementById('engId').value,
                 name: document.getElementById('engName').value,
-                email: document.getElementById('engEmail').value
+                email: document.getElementById('engEmail').value,
+                position: document.getElementById('engPosition').value
             };
 
             try {
@@ -283,7 +297,7 @@ if (!in_array($_SESSION['staff_email'] ?? '', $admins)) {
             }
             
             btn.disabled = false;
-            btn.innerText = 'Save Engineer';
+            btn.innerText = 'Save User';
         }
 
         async function deleteEngineer(id, name) {
