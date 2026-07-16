@@ -58,18 +58,35 @@ header .container { display: flex; justify-content: space-between; align-items: 
   margin-left: 3px;
 }
 
-.nav-links { list-style: none; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.nav-links { list-style: none; display: flex; gap: 15px; align-items: center; justify-content: flex-end; }
 .nav-links a {
-    color: #334152; text-decoration: none; font-weight: 500; font-size: 0.9rem;
-    padding: 0.4rem 0.5rem; position: relative;
+    color: #334152; text-decoration: none; font-weight: 500; font-size: 0.95rem;
+    padding: 0.4rem 0.6rem; position: relative; white-space: nowrap;
 }
 .nav-links a:hover { color: var(--primary-color); }
 .nav-links a::after {
-  content: ''; position: absolute; bottom: 2px; left: 50%;
+  content: ''; position: absolute; bottom: 0; left: 50%;
   width: 0; height: 2px; background: var(--primary-color);
   transition: width 0.3s ease, left 0.3s ease;
 }
-.nav-links a:hover::after { width: 60%; left: 20%; }
+.nav-links a:not([href="logout.php"]):hover::after { width: 60%; left: 20%; }
+
+.nav-links a[href="logout.php"] {
+    color: #dc3545 !important;
+    border: 1px solid #dc3545 !important;
+    border-radius: 5px !important;
+    padding: 5px 15px !important;
+    margin-left: 10px;
+    font-weight: 600 !important;
+    transition: all 0.2s ease;
+}
+.nav-links a[href="logout.php"]:hover {
+    background: #dc3545 !important;
+    color: #ffffff !important;
+}
+.nav-links a[href="logout.php"]::after {
+    display: none !important;
+}
 
 .card {
     background: var(--card-bg); border-radius: 14px;
