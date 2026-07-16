@@ -330,16 +330,17 @@ if ($engResult) {
                 </div>
             </a>
             <ul class="nav-links">
-                <li><a href="javascript:void(0)" id="headerTrack" onclick="switchTab('track-service-tab')"
-                        class="header-active">Track Service</a></li>
+                <li><a href="javascript:void(0)" id="headerTrack" onclick="switchTab('track-service-tab')" class="header-active">Track Service</a></li>
                 <li><a href="javascript:void(0)" id="headerNewService" onclick="switchTab('new-service-tab')">Add New Service</a></li>
                 <li><a href="dashboard.php">Dashboard</a></li>
                 <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
                 <li><a href="crm.php">CRM Analytics</a></li>
-                <li><a href="engineers_management.php">Manage Engineers</a></li>
                 <?php endif; ?>
                 <li><a href="task_management.php">Task Management</a></li>
-                <li><a href="logout.php" style="color: #dc3545; font-weight: 600; border: 1px solid #dc3545; border-radius: 5px; padding: 5px 12px; margin-left: 10px; text-decoration: none;">Logout</a></li>
+                <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
+                <li><a href="engineers_management.php">Manage Staff</a></li>
+                <?php endif; ?>
+                <li><a href="logout.php">Logout</a></li>
             </ul>
         </div>
     </header>
