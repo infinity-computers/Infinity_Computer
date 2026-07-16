@@ -197,7 +197,7 @@
                                      <h4 style="margin:0; color:var(--primary);">${item.service_id}</h4>
                                      <span style="font-size:0.7rem; background:#e0e0e0; padding:2px 6px; border-radius:4px; font-weight:700; text-transform:uppercase;">Home Service</span>
                                  </div>
-                                 <p style="margin-top:10px;"><strong>Customer:</strong> ${item.name} (${item.phone})</p>
+                                 <p style="margin-top:10px;"><strong>Customer:</strong> ${item.name}</p>
                                  <p><strong>Service:</strong> ${item.service_type}</p>
                                  <p><strong>Scheduled:</strong> ${item.booking_date} at ${item.time_slot}</p>
                                  <p><strong>Address:</strong> ${item.address}</p>
@@ -217,7 +217,7 @@
               html += `
                              <div class="result-card">
                                  <h4 style="margin:0 0 10px 0; color:var(--primary);">${item.service_id}</h4>
-                                 <p><strong>Customer:</strong> ${item.name} (${item.phone})</p>
+                                 <p><strong>Customer:</strong> ${item.name}</p>
                                  <p><strong>Device:</strong> ${item.brand} ${item.model} (${item.device_type})</p>
                                  <p><strong>Problem:</strong> ${item.problem}</p>
                                  <p><strong>Status:</strong> <span class="badge-status ${statusClass}">${item.status}</span></p>
