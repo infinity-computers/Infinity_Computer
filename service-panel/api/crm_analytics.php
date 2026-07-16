@@ -38,7 +38,7 @@ try {
             $s = strtolower($row['status']);
             $overview['total'] += $row['cnt'];
             if ($s === 'pending' || $s === 'accepted') $overview['pending'] += $row['cnt'];
-            elseif (in_array($s, ['diagnosing', 'repair in progress', 'waiting for parts'])) $overview['in_progress'] += $row['cnt'];
+            elseif (in_array($s, ['diagnosing', 'repair in progress', 'waiting for parts', 'waiting for customer approval', 'waiting for customer reply', 'customer call not answered', 'waiting for pending estimate'])) $overview['in_progress'] += $row['cnt'];
             elseif ($s === 'completed' || $s === 'ready for pickup') $overview['completed'] += $row['cnt'];
             elseif ($s === 'delivered') $overview['delivered'] += $row['cnt'];
             elseif ($s === 'cancelled') $overview['cancelled'] += $row['cnt'];

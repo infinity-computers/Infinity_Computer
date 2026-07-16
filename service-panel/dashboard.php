@@ -431,6 +431,10 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
                                 <option value="Diagnosing">Diagnosing</option>
                                 <option value="Repair in Progress">Repair in Progress</option>
                                 <option value="Waiting for Parts">Waiting for Parts</option>
+                                <option value="Waiting for Customer Approval">Waiting for Customer Approval</option>
+                                <option value="Waiting for Customer Reply">Waiting for Customer Reply</option>
+                                <option value="Customer Call Not Answered">Customer Call Not Answered</option>
+                                <option value="Waiting for Pending Estimate">Waiting for Pending Estimate</option>
                                 <option value="Completed">Completed</option>
                                 <option value="Ready for Pickup">Ready for Pickup</option>
                                 <option value="Delivered">Delivered</option>

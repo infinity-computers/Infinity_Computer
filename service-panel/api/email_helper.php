@@ -133,6 +133,18 @@ function sendServiceStatusUpdateEmail($email, $name, $service_id, $status, $devi
     } elseif ($status === 'Cancelled') {
         $statusColor = "#ef4444";
         $statusMessage = "Your device service has been <strong>cancelled</strong>. Please contact us for details.";
+    } elseif ($status === 'Waiting for Customer Approval') {
+        $statusColor = "#f59e0b";
+        $statusMessage = "We need your <strong>approval</strong> to proceed with the repair. Please review the estimate and confirm at your earliest convenience.";
+    } elseif ($status === 'Waiting for Customer Reply') {
+        $statusColor = "#f59e0b";
+        $statusMessage = "We are <strong>waiting for your reply</strong> regarding your device service. Please get in touch with us so we can continue.";
+    } elseif ($status === 'Customer Call Not Answered') {
+        $statusColor = "#ef4444";
+        $statusMessage = "We tried to reach you but <strong>your call was not answered</strong>. Please call us back or reply to this email so we can proceed with your service.";
+    } elseif ($status === 'Waiting for Pending Estimate') {
+        $statusColor = "#f59e0b";
+        $statusMessage = "We are currently preparing the <strong>cost estimate</strong> for your device repair. We will update you shortly with the details.";
     } else {
         $statusMessage = "The status of your device has been updated to: <strong>{$status}</strong>.";
     }

@@ -59,6 +59,11 @@
       background: #f8d7da;
       color: #721c24;
     }
+
+    .status-waiting {
+      background: #fff3cd;
+      color: #664d03;
+    }
   </style>
 </head>
 
@@ -187,8 +192,10 @@
           let html = '<h3>Results Found</h3>';
           result.data.forEach(item => {
             let statusClass = 'status-pending';
+            const waitingStatuses = ['Waiting for Customer Approval', 'Waiting for Customer Reply', 'Customer Call Not Answered', 'Waiting for Pending Estimate', 'Waiting for Parts', 'Diagnosing', 'Repair in Progress'];
             if (item.status === 'Approved' || item.status === 'Accepted' || item.status === 'Completed' || item.status === 'Ready for Pickup' || item.status === 'Delivered') statusClass = 'status-approved';
-            if (item.status === 'Rejected' || item.status === 'Cancelled') statusClass = 'status-rejected';
+            else if (item.status === 'Rejected' || item.status === 'Cancelled') statusClass = 'status-rejected';
+            else if (waitingStatuses.includes(item.status)) statusClass = 'status-waiting';
 
             if (item.request_type === 'home') {
               html += `

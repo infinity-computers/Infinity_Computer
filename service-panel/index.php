@@ -571,7 +571,7 @@ if ($engResult) {
             if (s === 'cancelled') return { currentStep: -1 };
             if (s === 'pending' || s === 'accepted') return { currentStep: 0, progress: '0%' };
             if (s === 'diagnosing') return { currentStep: 1, progress: '25%' };
-            if (s === 'repair in progress' || s === 'waiting for parts') return { currentStep: 2, progress: '50%' };
+            if (s === 'repair in progress' || s === 'waiting for parts' || s === 'waiting for customer approval' || s === 'waiting for customer reply' || s === 'customer call not answered' || s === 'waiting for pending estimate') return { currentStep: 2, progress: '50%' };
             if (s === 'completed' || s === 'ready for pickup') return { currentStep: 3, progress: '75%' };
             if (s === 'delivered') return { currentStep: 4, progress: '100%' };
             return { currentStep: 0, progress: '0%' };
