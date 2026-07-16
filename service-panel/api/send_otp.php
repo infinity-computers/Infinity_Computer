@@ -2,7 +2,18 @@
 session_start();
 header('Content-Type: application/json');
 
-require_once __DIR__ . '/../config/db.php';
+$allowedEmails = [
+    'akshar@staff.infinitycomputer.in',
+    'karan@staff.infinitycomputer.in',
+    'suraj@staff.infinitycomputer.in',
+    'rahul@staff.infinitycomputer.in',
+    'paresh@staff.infinitycomputer.in',
+    'om@dev.infinitycomputer.in',
+    'jatin@dev.infinitycomputer.in',
+    'icc@infinitycomputer.in',
+    'pacifier2204@gmail.com',
+    'rathorjatin70@gmail.com'
+];
 
 $input = json_decode(file_get_contents('php://input'), true);
 $email = trim(strtolower($input['email'] ?? ''));
@@ -12,18 +23,11 @@ if (empty($email)) {
     exit;
 }
 
-// Fetch user from DB
-$stmt = $conn->prepare("SELECT name FROM staff_users WHERE email = ?");
-$stmt->bind_param("s", $email);
-$stmt->execute();
-$result = $stmt->get_result();
-$staffData = $result->fetch_assoc();
-
-if (!$staffData) {
+if (!in_array($email, $allowedEmails)) {
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized email address']);
     exit;
 }
-$staffName = $staffData['name'];
+$staffName = ucfirst(explode('@', $email)[0]);
 
 // Cooldown check (30 seconds between sends)
 if (isset($_SESSION['otp_last_sent']) && (time() - $_SESSION['otp_last_sent']) < 30) {
