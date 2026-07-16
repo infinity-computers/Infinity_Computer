@@ -258,7 +258,17 @@ try {
     // 11. ENGINEER PERFORMANCE
     // ============================================
     $engStats = [];
-    $engineers_list = ['Suraj', 'Akshar', 'Karan', 'Rahul', 'Paresh'];
+    
+    $engQuery = "SELECT name FROM engineers";
+    $engResult = $conn->query($engQuery);
+    $engineers_list = [];
+    if ($engResult) {
+        while ($row = $engResult->fetch_assoc()) {
+            $engineers_list[] = $row['name'];
+        }
+    } else {
+        $engineers_list = ['Suraj', 'Akshar', 'Karan', 'Rahul', 'Paresh'];
+    }
     foreach ($engineers_list as $eng) {
         $engStats[$eng] = ['total' => 0, 'completed' => 0, 'pending' => 0];
     }

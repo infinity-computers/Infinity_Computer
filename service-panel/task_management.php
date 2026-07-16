@@ -1,4 +1,17 @@
-<?php include __DIR__ . '/auth_guard.php'; ?>
+<?php 
+include __DIR__ . '/auth_guard.php';
+require_once __DIR__ . '/config/db.php';
+$engQuery = "SELECT name FROM engineers ORDER BY name ASC";
+$engResult = $conn->query($engQuery);
+$engineersList = [];
+if ($engResult) {
+    while ($row = $engResult->fetch_assoc()) {
+        $engineersList[] = $row['name'];
+    }
+} else {
+    $engineersList = ['Suraj', 'Akshar', 'Karan', 'Rahul', 'Paresh', 'Om', 'Jatin'];
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -104,6 +117,7 @@
                 <li><a href="dashboard.php">Dashboard</a></li>
                 <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
                 <li><a href="crm.php">CRM Analytics</a></li>
+                <li><a href="engineers_management.php">Manage Engineers</a></li>
                 <?php endif; ?>
                 <li><a href="task_management.php" class="header-active">Task Management</a></li>
                 <li><a href="logout.php" style="color: #dc3545; font-weight: 600; border: 1px solid #dc3545; border-radius: 5px; padding: 5px 12px; margin-left: 10px; text-decoration: none;">Logout</a></li>
@@ -206,13 +220,9 @@
                 <div class="filter-group">
                     <select id="filterAssignee" class="form-control">
                         <option value="">All Engineers</option>
-                        <option value="Suraj">Suraj</option>
-                        <option value="Akshar">Akshar</option>
-                        <option value="Karan">Karan</option>
-                        <option value="Rahul">Rahul</option>
-                        <option value="Paresh">Paresh</option>
-                        <option value="Om">Om</option>
-                        <option value="Jatin">Jatin</option>
+                        <?php foreach($engineersList as $eng): ?>
+                        <option value="<?= htmlspecialchars($eng) ?>"><?= htmlspecialchars($eng) ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
                 <div class="filter-group">

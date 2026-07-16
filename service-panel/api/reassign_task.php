@@ -14,7 +14,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         exit;
     }
 
-    $allowed_engineers = ['Suraj', 'Akshar', 'Karan', 'Rahul', 'Paresh', 'Om', 'Jatin'];
+    $engQuery = "SELECT name FROM engineers";
+    $engResult = $conn->query($engQuery);
+    $allowed_engineers = [];
+    if ($engResult) {
+        while ($row = $engResult->fetch_assoc()) {
+            $allowed_engineers[] = $row['name'];
+        }
+    } else {
+        $allowed_engineers = ['Suraj', 'Akshar', 'Karan', 'Rahul', 'Paresh', 'Om', 'Jatin'];
+    }
+
     if (!in_array($new_assignee, $allowed_engineers)) {
         echo json_encode(['status' => 'error', 'message' => 'Invalid engineer selection']);
         exit;

@@ -3,14 +3,8 @@ include __DIR__ . '/auth_guard.php';
 require_once __DIR__ . '/config/db.php';
 
 // Check if user is admin
-$currentUserEmail = $_SESSION['staff_email'];
-$adminCheckQuery = $conn->prepare("SELECT role FROM staff_users WHERE email = ?");
-$adminCheckQuery->bind_param("s", $currentUserEmail);
-$adminCheckQuery->execute();
-$adminResult = $adminCheckQuery->get_result();
-$adminData = $adminResult->fetch_assoc();
-
-if (!$adminData || $adminData['role'] !== 'admin') {
+$admins = ['icc@infinitycomputer.in', 'suraj@staff.infinitycomputer.in'];
+if (!in_array($_SESSION['staff_email'] ?? '', $admins)) {
     die("<h2>Access Denied</h2><p>You do not have permission to view this page. This page is restricted to administrators.</p><a href='index.php'>Go back</a>");
 }
 ?>
@@ -19,7 +13,7 @@ if (!$adminData || $adminData['role'] !== 'admin') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Management - Infinity Computer</title>
+    <title>Engineers Management - Infinity Computer</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
@@ -30,7 +24,7 @@ if (!$adminData || $adminData['role'] !== 'admin') {
             margin-bottom: 30px;
         }
         
-        .staff-table {
+        .eng-table {
             width: 100%;
             border-collapse: collapse;
             background: #fff;
@@ -39,13 +33,13 @@ if (!$adminData || $adminData['role'] !== 'admin') {
             overflow: hidden;
         }
         
-        .staff-table th, .staff-table td {
+        .eng-table th, .eng-table td {
             padding: 15px 20px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
         
-        .staff-table th {
+        .eng-table th {
             background: #f8fafc;
             font-weight: 600;
             color: var(--text-dark);
@@ -54,20 +48,9 @@ if (!$adminData || $adminData['role'] !== 'admin') {
             letter-spacing: 0.5px;
         }
         
-        .staff-table tr:hover {
+        .eng-table tr:hover {
             background: #f1f5f9;
         }
-        
-        .role-badge {
-            padding: 4px 10px;
-            border-radius: 50px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .role-admin { background: #fee2e2; color: #991b1b; }
-        .role-staff { background: #d1fae5; color: #065f46; }
         
         .action-btn {
             background: none;
@@ -152,7 +135,7 @@ if (!$adminData || $adminData['role'] !== 'admin') {
                 <li><a href="dashboard.php">Dashboard</a></li>
                 <li><a href="crm.php">CRM Analytics</a></li>
                 <li><a href="task_management.php">Task Management</a></li>
-                <li><a href="staff_management.php" class="header-active" style="color: var(--primary-color);">Staff Mgmt</a></li>
+                <li><a href="engineers_management.php" class="header-active" style="color: var(--primary-color);">Manage Engineers</a></li>
                 <li><a href="logout.php" style="color: #dc3545; font-weight: 600; border: 1px solid #dc3545; border-radius: 5px; padding: 5px 12px; margin-left: 10px; text-decoration: none;">Logout</a></li>
             </ul>
         </div>
@@ -160,53 +143,45 @@ if (!$adminData || $adminData['role'] !== 'admin') {
 
     <div class="container" style="max-width: 1000px; margin-top: 40px; margin-bottom: 40px;">
         <div class="page-header">
-            <h2>Staff Management</h2>
-            <button class="btn btn-primary" onclick="openAddModal()">+ Add New Staff</button>
+            <h2>Engineers Management</h2>
+            <button class="btn btn-primary" onclick="openAddModal()">+ Add Engineer</button>
         </div>
 
-        <table class="staff-table">
+        <table class="eng-table">
             <thead>
                 <tr>
                     <th>ID</th>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Role</th>
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody id="staffTableBody">
-                <tr><td colspan="5" style="text-align:center;">Loading...</td></tr>
+            <tbody id="engTableBody">
+                <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
             </tbody>
         </table>
     </div>
 
     <!-- Add/Edit Modal -->
-    <div class="modal-overlay" id="staffModal">
+    <div class="modal-overlay" id="engModal">
         <div class="modal">
             <div class="modal-header">
-                <h3 class="modal-title" id="modalTitle">Add Staff</h3>
+                <h3 class="modal-title" id="modalTitle">Add Engineer</h3>
                 <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
-            <form id="staffForm" onsubmit="handleStaffSubmit(event)">
-                <input type="hidden" id="staffId" name="id">
+            <form id="engForm" onsubmit="handleEngSubmit(event)">
+                <input type="hidden" id="engId" name="id">
                 <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" id="staffName" name="name" class="form-control" required>
+                    <label>Engineer Name</label>
+                    <input type="text" id="engName" name="name" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" id="staffEmail" name="email" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label>Role</label>
-                    <select id="staffRole" name="role" class="form-control" required>
-                        <option value="staff">Staff</option>
-                        <option value="admin">Admin</option>
-                    </select>
+                    <label>Email Address (Optional)</label>
+                    <input type="email" id="engEmail" name="email" class="form-control">
                 </div>
                 <div style="margin-top: 25px; text-align: right;">
                     <button type="button" class="btn" style="background: #e2e8f0; color: #333;" onclick="closeModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="saveBtn">Save User</button>
+                    <button type="submit" class="btn btn-primary" id="saveBtn">Save Engineer</button>
                 </div>
             </form>
         </div>
@@ -215,47 +190,42 @@ if (!$adminData || $adminData['role'] !== 'admin') {
     <div id="toast" class="toast"></div>
 
     <script>
-        const currentUserEmail = "<?= $currentUserEmail ?>";
-        let isEditMode = false;
+        document.addEventListener('DOMContentLoaded', loadEngineers);
 
-        document.addEventListener('DOMContentLoaded', loadStaff);
-
-        async function loadStaff() {
+        async function loadEngineers() {
             try {
-                const res = await fetch('api/get_staff.php');
+                const res = await fetch('api/engineers_api.php');
                 const result = await res.json();
                 
                 if (result.status === 'success') {
                     renderTable(result.data);
                 } else {
-                    showToast(result.message || 'Error loading staff data', 'error');
+                    showToast(result.message || 'Error loading engineers data', 'error');
                 }
             } catch (err) {
-                showToast('Network error loading staff', 'error');
+                showToast('Network error loading engineers', 'error');
             }
         }
 
-        function renderTable(staffList) {
-            const tbody = document.getElementById('staffTableBody');
+        function renderTable(engList) {
+            const tbody = document.getElementById('engTableBody');
             tbody.innerHTML = '';
             
-            if(staffList.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No staff found</td></tr>';
+            if(engList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No engineers found</td></tr>';
                 return;
             }
 
-            staffList.forEach(staff => {
+            engList.forEach(eng => {
                 const tr = document.createElement('tr');
-                const isSelf = staff.email === currentUserEmail;
                 
                 tr.innerHTML = `
-                    <td>${staff.id}</td>
-                    <td style="font-weight: 500;">${staff.name} ${isSelf ? ' <span style="font-size:0.75rem; color:#94a3b8;">(You)</span>' : ''}</td>
-                    <td>${staff.email}</td>
-                    <td><span class="role-badge role-${staff.role}">${staff.role}</span></td>
+                    <td>${eng.id}</td>
+                    <td style="font-weight: 500;">${eng.name}</td>
+                    <td>${eng.email || '-'}</td>
                     <td>
-                        <button class="action-btn edit" onclick='openEditModal(${JSON.stringify(staff)})' title="Edit">✏️</button>
-                        ${!isSelf ? `<button class="action-btn delete" onclick="deleteStaff(${staff.id}, '${staff.name}')" title="Delete">🗑️</button>` : ''}
+                        <button class="action-btn edit" onclick='openEditModal(${JSON.stringify(eng)})' title="Edit">✏️</button>
+                        <button class="action-btn delete" onclick="deleteEngineer(${eng.id}, '${eng.name}')" title="Delete">🗑️</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -263,44 +233,38 @@ if (!$adminData || $adminData['role'] !== 'admin') {
         }
 
         function openAddModal() {
-            isEditMode = false;
-            document.getElementById('modalTitle').innerText = 'Add New Staff';
-            document.getElementById('staffForm').reset();
-            document.getElementById('staffId').value = '';
-            document.getElementById('staffModal').style.display = 'flex';
+            document.getElementById('modalTitle').innerText = 'Add New Engineer';
+            document.getElementById('engForm').reset();
+            document.getElementById('engId').value = '';
+            document.getElementById('engModal').style.display = 'flex';
         }
 
-        function openEditModal(staff) {
-            isEditMode = true;
-            document.getElementById('modalTitle').innerText = 'Edit Staff';
-            document.getElementById('staffId').value = staff.id;
-            document.getElementById('staffName').value = staff.name;
-            document.getElementById('staffEmail').value = staff.email;
-            document.getElementById('staffRole').value = staff.role;
-            document.getElementById('staffModal').style.display = 'flex';
+        function openEditModal(eng) {
+            document.getElementById('modalTitle').innerText = 'Edit Engineer';
+            document.getElementById('engId').value = eng.id;
+            document.getElementById('engName').value = eng.name;
+            document.getElementById('engEmail').value = eng.email || '';
+            document.getElementById('engModal').style.display = 'flex';
         }
 
         function closeModal() {
-            document.getElementById('staffModal').style.display = 'none';
+            document.getElementById('engModal').style.display = 'none';
         }
 
-        async function handleStaffSubmit(e) {
+        async function handleEngSubmit(e) {
             e.preventDefault();
             const btn = document.getElementById('saveBtn');
             btn.disabled = true;
             btn.innerText = 'Saving...';
 
             const formData = {
-                id: document.getElementById('staffId').value,
-                name: document.getElementById('staffName').value,
-                email: document.getElementById('staffEmail').value,
-                role: document.getElementById('staffRole').value
+                id: document.getElementById('engId').value,
+                name: document.getElementById('engName').value,
+                email: document.getElementById('engEmail').value
             };
 
-            const url = isEditMode ? 'api/update_staff.php' : 'api/add_staff.php';
-
             try {
-                const res = await fetch(url, {
+                const res = await fetch('api/engineers_api.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
@@ -310,7 +274,7 @@ if (!$adminData || $adminData['role'] !== 'admin') {
                 if (result.status === 'success') {
                     showToast(result.message, 'success');
                     closeModal();
-                    loadStaff();
+                    loadEngineers();
                 } else {
                     showToast(result.message, 'error');
                 }
@@ -319,25 +283,25 @@ if (!$adminData || $adminData['role'] !== 'admin') {
             }
             
             btn.disabled = false;
-            btn.innerText = 'Save User';
+            btn.innerText = 'Save Engineer';
         }
 
-        async function deleteStaff(id, name) {
-            if (!confirm(`Are you sure you want to delete ${name}?\nThey will no longer be able to login to the service panel.`)) {
+        async function deleteEngineer(id, name) {
+            if (!confirm(`Are you sure you want to delete ${name}?`)) {
                 return;
             }
 
             try {
-                const res = await fetch('api/delete_staff.php', {
+                const res = await fetch('api/engineers_api.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: id })
+                    body: JSON.stringify({ id: id, action: 'delete' })
                 });
                 const result = await res.json();
                 
                 if (result.status === 'success') {
                     showToast(result.message, 'success');
-                    loadStaff();
+                    loadEngineers();
                 } else {
                     showToast(result.message, 'error');
                 }
