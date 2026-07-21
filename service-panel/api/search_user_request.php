@@ -21,6 +21,21 @@ try {
         $stmt1->execute();
         $res1 = $stmt1->get_result();
         while($row = $res1->fetch_assoc()) {
+            // Fetch all images for web requests
+            $row['images'] = [];
+            $tableCheck1 = $conn->query("SHOW TABLES LIKE 'service_images'");
+            if ($tableCheck1->num_rows > 0) {
+                $img_stmt1 = $conn->prepare("SELECT image_path FROM service_images WHERE service_id = ? AND source_table = 'user_service_requests' ORDER BY id ASC");
+                $img_stmt1->bind_param("s", $row['service_id']);
+                $img_stmt1->execute();
+                $img_res1 = $img_stmt1->get_result();
+                while ($img_row1 = $img_res1->fetch_assoc()) {
+                    $row['images'][] = $img_row1['image_path'];
+                }
+            }
+            if (empty($row['images']) && !empty($row['image_path'])) {
+                $row['images'][] = $row['image_path'];
+            }
             $data[] = $row;
         }
         
@@ -51,6 +66,30 @@ try {
         $stmt3->execute();
         $res3 = $stmt3->get_result();
         while($row = $res3->fetch_assoc()) {
+            // Fetch logs for engineering services
+            $log_stmt = $conn->prepare("SELECT * FROM service_status_logs WHERE service_id = ? ORDER BY updated_at DESC");
+            $log_stmt->bind_param("i", $row['id']);
+            $log_stmt->execute();
+            $log_res = $log_stmt->get_result();
+            $row['logs'] = [];
+            while($log_row = $log_res->fetch_assoc()) {
+                $row['logs'][] = $log_row;
+            }
+            // Fetch all images
+            $row['images'] = [];
+            $tableCheck3 = $conn->query("SHOW TABLES LIKE 'service_images'");
+            if ($tableCheck3->num_rows > 0) {
+                $img_stmt3 = $conn->prepare("SELECT image_path FROM service_images WHERE service_id = ? AND source_table = 'services' ORDER BY id ASC");
+                $img_stmt3->bind_param("s", $row['service_id']);
+                $img_stmt3->execute();
+                $img_res3 = $img_stmt3->get_result();
+                while ($img_row3 = $img_res3->fetch_assoc()) {
+                    $row['images'][] = $img_row3['image_path'];
+                }
+            }
+            if (empty($row['images']) && !empty($row['image_path'])) {
+                $row['images'][] = $row['image_path'];
+            }
             $data[] = $row;
         }
         

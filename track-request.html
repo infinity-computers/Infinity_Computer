@@ -28,41 +28,326 @@
       }
     }
 
-    .result-card {
-      background: #f9f9f9;
-      border: 1px solid #ddd;
-      padding: 20px;
-      border-radius: 8px;
-      margin-top: 20px;
+    :root {
+      --primary-color: var(--primary);
+      --primary-dark: var(--primary-dark);
+      --bg-light: var(--surface-alt);
+      --text-dark: var(--text);
+      --border-color: var(--border);
+      --danger: #ef4444;
+      --success: #1f7a52;
+    }
+
+    /* Override main site .badge classes for service tracking status */
+    #resultsArea .badge {
+      display: inline-block;
+      padding: 0.4rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: default;
+      transition: none;
+      margin-bottom: 0;
+    }
+    #resultsArea .badge:hover {
+      transform: none;
+      box-shadow: none;
+    }
+    #resultsArea .badge.pending { background: #fef3c7 !important; color: #92400e !important; }
+    #resultsArea .badge.completed { background: #d1fae5 !important; color: #065f46 !important; }
+    #resultsArea .badge.diagnosing { background: #e9f1fb !important; color: var(--primary) !important; }
+    #resultsArea .badge.cancelled { background: #fee2e2 !important; color: #991b1b !important; }
+    #resultsArea .badge.default { background: #e2e8f0 !important; color: #1e293b !important; }
+
+    /* resultsArea container cards & styling */
+    #resultsArea .card {
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(20, 40, 80, 0.08);
+      padding: 25px;
+      margin-bottom: 25px;
+      border: 1px solid var(--border);
+      transition: transform 0.3s, box-shadow 0.3s;
+      text-align: left;
+    }
+    #resultsArea .card:hover {
+      transform: none;
+      box-shadow: 0 16px 40px rgba(20, 40, 80, 0.13);
+    }
+    #resultsArea .card-title {
+      margin-bottom: 20px;
+      font-size: 1.25rem;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 15px;
+      color: var(--primary-dark);
+    }
+
+    /* Modern Package Stepper */
+    .track-stepper {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin: 40px 0 50px;
+    }
+
+    .track-stepper::before {
+      content: '';
+      position: absolute;
+      top: 25px;
+      left: 10%;
+      width: 80%;
+      height: 4px;
+      background: #e2e8f0;
+      z-index: 1;
+    }
+
+    .track-stepper-progress {
+      position: absolute;
+      top: 25px;
+      left: 10%;
+      height: 4px;
+      background: var(--primary);
+      z-index: 1;
+      transition: width 0.5s ease;
+    }
+
+    .step {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      flex: 1;
+    }
+
+    .step-icon {
+      width: 50px;
+      height: 50px;
+      margin: 0 auto 10px;
+      background: #fff;
+      border: 4px solid #e2e8f0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      transition: all 0.3s ease;
+      color: #94a3b8;
+    }
+
+    .step p {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #64748b;
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .step.done .step-icon {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .step.active .step-icon {
+      border-color: var(--primary);
+      background: #fff;
+      color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(31, 95, 174, 0.2);
+    }
+
+    .step.done p,
+    .step.active p {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .step.cancelled-step .step-icon {
+      border-color: var(--danger);
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .step.cancelled-step p {
+      color: var(--danger);
+    }
+
+    /* Timeline activity log styles */
+    .timeline {
+      list-style: none;
+      padding: 0;
+      position: relative;
+      margin-top: 30px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 24px;
+      width: 2px;
+      background: #e2e8f0;
+    }
+
+    .timeline li {
+      position: relative;
+      margin-bottom: 20px;
+      padding-left: 60px;
+    }
+
+    .timeline-bullet {
+      position: absolute;
+      left: 16px;
+      top: 4px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      border: 3px solid #fff;
+      box-shadow: 0 0 0 1px #cbd5e1;
+      z-index: 2;
+    }
+
+    .timeline li:first-child .timeline-bullet {
+      background: var(--primary);
+      box-shadow: 0 0 0 2px rgba(31, 95, 174, 0.3);
+      width: 20px;
+      height: 20px;
+      left: 15px;
+      top: 2px;
+    }
+
+    .timeline-content {
+      background: var(--surface-alt);
+      border-radius: 12px;
+      padding: 15px 20px;
+      border: 1px solid var(--border);
+    }
+
+    .timeline-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .timeline-title {
+      font-weight: 600;
+      font-size: 1.05rem;
+      margin: 0;
+      color: var(--text);
+    }
+
+    .timeline-date {
+      font-size: 0.85rem;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .timeline-text {
+      margin: 0;
+      font-size: 0.95rem;
+      color: #475569;
+    }
+
+    /* Service Accordion for multiple results */
+    .service-accordion {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 15px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
       text-align: left;
     }
 
-    .badge-status {
-      display: inline-block;
-      padding: 5px 10px;
-      border-radius: 4px;
+    .service-header {
+      padding: 20px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fafbfc;
+      border-bottom: 1px solid transparent;
+      transition: background 0.3s;
+    }
+
+    .service-header:hover {
+      background: #f1f5f9;
+    }
+
+    .service-header.open {
+      border-bottom-color: var(--border);
+      background: #fff;
+    }
+
+    .service-body {
+      padding: 30px 20px;
+      display: none;
+    }
+
+    .service-body.open {
+      display: block;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .info-item {
+      background: var(--surface-alt);
+      padding: 15px;
+      border-radius: 10px;
+    }
+
+    .info-item label {
       font-weight: 600;
-      font-size: 0.9rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+      display: block;
     }
 
-    .status-pending {
-      background: #ffeeba;
-      color: #856404;
-    }
+    @media (max-width: 768px) {
+      .track-stepper {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 30px;
+        margin-left: 20px;
+      }
 
-    .status-approved {
-      background: #d4edda;
-      color: #155724;
-    }
+      .track-stepper::before {
+        top: 0;
+        bottom: 0;
+        left: 25px;
+        width: 2px;
+        height: auto;
+      }
 
-    .status-rejected {
-      background: #f8d7da;
-      color: #721c24;
-    }
+      .track-stepper-progress {
+        top: 0;
+        left: 25px;
+        width: 2px;
+        height: var(--prog-height, 0%);
+      }
 
-    .status-waiting {
-      background: #fff3cd;
-      color: #664d03;
+      .step {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        text-align: left;
+        width: 100%;
+      }
+
+      .step-icon {
+        margin: 0;
+      }
     }
   </style>
 </head>
@@ -147,7 +432,7 @@
 
     <section class="section reveal">
       <div class="container">
-        <article class="card reveal-scale" style="max-width: 600px; margin: 0 auto; padding: 40px; text-align: center;">
+        <article class="card reveal-scale" style="max-width: 600px; margin: 0 auto 40px; padding: 40px; text-align: center;">
           <form id="trackForm">
             <div class="form-row">
               <input type="text" id="search_query" name="search_query" placeholder="Enter Service ID, Phone, or Name..."
@@ -158,15 +443,202 @@
                 style="padding: 15px 30px; font-size: 1.1rem;">Track Status</button>
             </div>
           </form>
-
-          <div id="resultsArea"></div>
         </article>
+
+        <div id="resultsArea" style="max-width: 850px; margin: 0 auto;"></div>
       </div>
     </section>
   </main>
 
   <script src="js/script.js"></script>
   <script>
+    function getStatusBadgeClass(status) {
+        switch(status.toLowerCase()) {
+            case 'pending': 
+            case 'waiting for parts':
+                return 'badge pending';
+            case 'diagnosing': 
+            case 'repair in progress':
+                return 'badge diagnosing';
+            case 'completed': 
+            case 'ready for pickup': 
+            case 'delivered': 
+                return 'badge completed';
+            case 'cancelled': 
+                return 'badge cancelled';
+            default: 
+                return 'badge default';
+        }
+    }
+
+    function formatDate(dateStr) {
+        if(!dateStr) return 'N/A';
+        const d = new Date(dateStr.replace(/-/g, "/"));
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const day = d.getDate();
+        const month = months[d.getMonth()];
+        const year = d.getFullYear();
+        let hours = d.getHours();
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'pm' : 'am';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        const strTime = hours + ':' + minutes + ' ' + ampm;
+        return `${day} ${month} ${year}, ${strTime}`;
+    }
+
+    function getStepData(status) {
+        const s = status.toLowerCase();
+        if (s === 'cancelled' || s === 'rejected') return { currentStep: -1 };
+        if (s === 'pending' || s === 'accepted' || s === 'pending approval') return { currentStep: 0, progress: '0%' };
+        if (s === 'diagnosing' || s === 'approved') return { currentStep: 1, progress: '25%' };
+        if (s === 'repair in progress' || s === 'waiting for parts' || s === 'waiting for customer approval' || s === 'waiting for customer reply' || s === 'customer call not answered' || s === 'waiting for pending estimate') return { currentStep: 2, progress: '50%' };
+        if (s === 'completed' || s === 'ready for pickup') return { currentStep: 3, progress: '75%' };
+        if (s === 'delivered') return { currentStep: 4, progress: '100%' };
+        return { currentStep: 0, progress: '0%' };
+    }
+
+    function getTimelineLogs(svc) {
+        if (svc.logs && svc.logs.length > 0) {
+            return svc.logs;
+        }
+        
+        const logs = [];
+        const status = svc.status || 'Pending';
+        const createdAt = svc.created_at || svc.booking_date || new Date().toISOString();
+        const updatedAt = svc.updated_at || createdAt;
+        
+        logs.push({
+            status: 'Pending',
+            remarks: 'Service request created',
+            updated_at: createdAt
+        });
+        
+        if (status.toLowerCase() !== 'pending' && status.toLowerCase() !== 'pending approval') {
+            if (status.toLowerCase() === 'cancelled') {
+                logs.push({
+                    status: 'Cancelled',
+                    remarks: 'Request has been cancelled',
+                    updated_at: updatedAt
+                });
+            } else if (status.toLowerCase() === 'rejected') {
+                logs.push({
+                    status: 'Rejected',
+                    remarks: 'Request has been rejected',
+                    updated_at: updatedAt
+                });
+            } else if (status.toLowerCase() === 'approved' || status.toLowerCase() === 'accepted') {
+                logs.push({
+                    status: status,
+                    remarks: 'Request approved and accepted',
+                    updated_at: updatedAt
+                });
+            } else {
+                logs.push({
+                    status: status,
+                    remarks: 'Status updated to ' + status,
+                    updated_at: updatedAt
+                });
+            }
+        }
+        
+        return logs.reverse();
+    }
+
+    function toggleAccordion(id) {
+        const body = document.getElementById('body-' + id);
+        const header = document.getElementById('header-' + id);
+        if (body.classList.contains('open')) { body.classList.remove('open'); header.classList.remove('open'); }
+        else { body.classList.add('open'); header.classList.add('open'); }
+    }
+
+    function renderResults(services) {
+        const container = document.getElementById('resultsArea');
+        container.innerHTML = '';
+        const isMulti = services.length > 1;
+        if (isMulti) {
+            const h = document.createElement('h3');
+            h.style.cssText = 'margin-bottom:25px; text-align:center; color:var(--primary-dark);';
+            h.innerText = `Service History (${services.length} records found)`;
+            container.appendChild(h);
+        }
+
+        services.forEach((svc, index) => {
+            const wrap = document.createElement('div');
+            wrap.className = isMulti ? 'service-accordion' : 'card';
+            if (!isMulti) wrap.style.marginBottom = '40px';
+            const { currentStep, progress } = getStepData(svc.status);
+            const isCancelled = currentStep === -1;
+            const isOpen = !isMulti || index === 0;
+
+            // Map to source types
+            let source = 'web_request';
+            if (svc.request_type === 'home') {
+                source = 'home';
+            } else if ('customer_id' in svc || 'date_received' in svc) {
+                source = 'engineering';
+            }
+
+            let typeLabel = source === 'engineering' ? 'Shop Service' : (source === 'web_request' ? 'Web Inquiry' : 'Home Service');
+            let deviceDisplayName = source === 'web_request' ? `${svc.brand} ${svc.model} (${svc.device_type})` : (source === 'home' ? (svc.service_type || 'Home Visit') : (svc.device_name || ''));
+            const sourceBadge = `<span style="font-size: 0.7rem; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 4px; font-weight: 700; text-transform: uppercase; margin-right: 10px;">${typeLabel}</span>`;
+
+            let html = isMulti ? `<div class="service-header ${isOpen ? 'open' : ''}" id="header-${svc.id || svc.service_id}" onclick="toggleAccordion('${svc.id || svc.service_id}')"><div style="flex:1;"><div style="display:flex; align-items:center; gap:15px; margin-bottom:5px; flex-wrap: wrap;">${sourceBadge}<strong style="font-size:1.1rem; color:var(--primary-dark);">${svc.service_id}</strong><span class="${getStatusBadgeClass(svc.status)}">${svc.status}</span></div><div style="color:var(--muted); font-size:0.95rem;">${deviceDisplayName} - ${formatDate(svc.date_received || svc.created_at)}</div></div><div style="color:var(--primary-color); font-weight:600; font-size:1.2rem;">▼</div></div><div class="service-body ${isOpen ? 'open' : ''}" id="body-${svc.id || svc.service_id}">` : `<div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;"><span>${sourceBadge} Ticket: <strong style="color:var(--text-dark);">${svc.service_id}</strong></span><span class="${getStatusBadgeClass(svc.status)}">${svc.status}</span></div>`;
+
+            // Render Stepper for all requests
+            if (isCancelled) {
+                html += `<div class="track-stepper" style="justify-content:center;"><div class="step cancelled-step"><div class="step-icon">❌</div><p>Service Cancelled</p></div></div>`;
+            } else {
+                html += `<div class="track-stepper" style="--prog-height: ${progress};"><div class="track-stepper-progress" style="width: ${window.innerWidth > 768 ? progress : '2px'};"></div><div class="step ${currentStep >= 0 ? 'done' : ''} ${currentStep === 0 ? 'active' : ''}"><div class="step-icon">📦</div><p>Received</p></div><div class="step ${currentStep >= 1 ? 'done' : ''} ${currentStep === 1 ? 'active' : ''}"><div class="step-icon">🔍</div><p>Diagnosing</p></div><div class="step ${currentStep >= 2 ? 'done' : ''} ${currentStep === 2 ? 'active' : ''}"><div class="step-icon">🔧</div><p>Repairing</p></div><div class="step ${currentStep >= 3 ? 'done' : ''} ${currentStep === 3 ? 'active' : ''}"><div class="step-icon">✅</div><p>Ready</p></div><div class="step ${currentStep >= 4 ? 'done' : ''} ${currentStep === 4 ? 'active' : ''}"><div class="step-icon">🎉</div><p>Delivered</p></div></div>`;
+            }
+
+            html += `<div style="border-top: 1px solid var(--border-color); padding-top: 25px; margin-top: 10px;"><h4 style="margin-bottom:15px; color:var(--muted); font-size:0.9rem; text-transform:uppercase;">Details & Information</h4><div class="info-grid"><div class="info-item"><label>Customer Details</label><div style="font-weight:600; font-size:1.1rem; color:var(--text-dark);">${svc.name}</div><div class="text-muted" style="font-size:0.9rem;">${svc.phone} ${svc.email ? ' | ' + svc.email : ''}</div></div><div class="info-item"><label>Device / Service</label><div style="font-weight:600; color:var(--text-dark);">${deviceDisplayName}</div><div class="text-muted" style="font-size:0.85rem;">${svc.service_type || (source === 'home' ? 'Home Service' : 'Standard')}</div></div></div>`;
+            
+            if (svc.assigned_engineer) {
+                html += `<div style="margin-top:15px; background:#f0f9ff; padding:10px 15px; border-radius:8px; border:1px solid #bae6fd;"><label style="color:#0369a1; font-weight:700; font-size:0.75rem; text-transform:uppercase;">Assigned Engineer</label><div style="font-weight:700; color:#0c4a6e; font-size:1.1rem;">🔧 ${svc.assigned_engineer}</div></div>`;
+            }
+
+            if (source === 'home') {
+                html += `<div class="info-grid" style="margin-top:15px;"><div class="info-item"><label>Schedule</label><div style="font-weight:600; color:var(--text-dark);">${svc.booking_date} at ${svc.time_slot}</div></div><div class="info-item"><label>Address</label><div style="font-weight:600; color:var(--text-dark);">${svc.address}</div></div></div>`;
+            }
+
+            // Preserve device drop off notice if relevant for web requests
+            if (source === 'web_request') {
+                html += `<div class="info-grid" style="margin-top:15px;"><div class="info-item"><label>Device Dropped Off</label><div style="font-weight:600; color:var(--text-dark);">${svc.device_received == 1 ? '✅ Yes' : '❌ No (Please drop off at store)'}</div></div></div>`;
+            }
+
+            html += `<div class="info-item" style="margin-top: 15px; background: #fff; border: 1px solid var(--border-color);"><label>Reported Problem / Inquiry</label><div style="color:var(--text-dark);">${svc.problem || 'General Service Inquiry'}</div></div></div>`;
+            
+            // Images
+            const imgs = (svc.images && svc.images.length > 0) ? svc.images : (svc.image_path ? [svc.image_path] : []);
+            if (imgs.length > 0) {
+                html += `<div class="mt-4"><label style="font-weight:600; color:var(--muted); font-size:0.85rem; text-transform:uppercase;">Device Image${imgs.length > 1 ? 's' : ''}</label><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">${imgs.map(p => `<img src="${p}" class="device-image-preview" style="height:200px; width:auto; max-width:100%; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); object-fit:cover; cursor:pointer;" onclick="window.open('${p}','_blank')" alt="Device">`).join('')}</div></div>`;
+            }
+
+            // Logs (always rendered using getTimelineLogs)
+            const activeLogs = getTimelineLogs(svc);
+            if (activeLogs && activeLogs.length > 0) {
+                html += `<div style="margin-top: 30px; padding-top: 10px;"><h4 style="margin-bottom:0; color:var(--muted); font-size:0.9rem; text-transform:uppercase;">Detailed Activity Log</h4><ul class="timeline">`;
+                activeLogs.forEach(log => {
+                    html += `<li><div class="timeline-bullet"></div><div class="timeline-content"><div class="timeline-meta"><h5 class="timeline-title">${log.status}</h5><span class="timeline-date">${formatDate(log.updated_at)}</span></div>${log.remarks ? `<p class="timeline-text">${log.remarks}</p>` : ''}</div></li>`;
+                });
+                html += `</ul></div>`;
+            }
+
+            // Add Approved + Dropped Off message for web requests
+            if (source === 'web_request' && svc.status === 'Approved' && svc.device_received == 1) {
+                html += `<div style="margin-top:15px; color:#155724; background:#d4edda; padding:15px; border-radius:8px; border:1px solid #c3e6cb; font-size:0.95rem;"><strong>Note:</strong> Your device is now with our engineers. Please track it using your Service ID for engineer updates.</div>`;
+            }
+
+            // Note about data retention
+            html += `<div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed var(--border-color); font-size: 0.85rem; color: var(--muted);"><strong>Note:</strong> This data will be wiped within 30 days. You can use your Service ID for tracking on this page.</div>`;
+
+            if (isMulti) html += `</div>`;
+            wrap.innerHTML = html;
+            container.appendChild(wrap);
+        });
+    }
+
     document.getElementById('trackForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('submitBtn');
@@ -189,57 +661,7 @@
         }
 
         if (result.status === 'success' && result.data.length > 0) {
-          let html = '<h3>Results Found</h3>';
-          result.data.forEach(item => {
-            let statusClass = 'status-pending';
-            const waitingStatuses = ['Waiting for Customer Approval', 'Waiting for Customer Reply', 'Customer Call Not Answered', 'Waiting for Pending Estimate', 'Waiting for Parts', 'Diagnosing', 'Repair in Progress'];
-            if (item.status === 'Approved' || item.status === 'Accepted' || item.status === 'Completed' || item.status === 'Ready for Pickup' || item.status === 'Delivered') statusClass = 'status-approved';
-            else if (item.status === 'Rejected' || item.status === 'Cancelled') statusClass = 'status-rejected';
-            else if (waitingStatuses.includes(item.status)) statusClass = 'status-waiting';
-
-            if (item.request_type === 'home') {
-              html += `
-                             <div class="result-card" style="border-left: 5px solid #007bff;">
-                                 <div style="display:flex; justify-content:space-between; align-items:start;">
-                                     <h4 style="margin:0; color:var(--primary);">${item.service_id}</h4>
-                                     <span style="font-size:0.7rem; background:#e0e0e0; padding:2px 6px; border-radius:4px; font-weight:700; text-transform:uppercase;">Home Service</span>
-                                 </div>
-                                 <p style="margin-top:10px;"><strong>Customer:</strong> ${item.name}</p>
-                                 <p><strong>Service:</strong> ${item.service_type}</p>
-                                 <p><strong>Scheduled:</strong> ${item.booking_date} at ${item.time_slot}</p>
-                                 <p><strong>Address:</strong> ${item.address}</p>
-                                 <p><strong>Status:</strong> <span class="badge-status ${statusClass}">${item.status}</span></p>
-                                 <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc; font-size: 0.85rem; color: #666;">
-                                     <strong>Note:</strong> This data will be wiped within 30 days. You can use your Service ID for tracking on this page.
-                                 </div>
-                             </div>
-                        `;
-            } else {
-              let imgHtml = item.image_path ? `<div style="margin-top:10px;"><img src="${item.image_path}" alt="Device" style="max-width:100%; height:auto; border-radius:4px; max-height:200px;"></div>` : '';
-              let mainWorkflowMsg = '';
-              if (item.status === 'Approved' && item.device_received == 1) {
-                mainWorkflowMsg = `<div style="margin-top:10px; color:#155724; background:#d4edda; padding:10px; border-radius:4px;"><strong>Note:</strong> Your device is now with our engineers. Please track it on the <strong>main tracking page</strong> using your Service ID for engineer updates.</div>`;
-              }
-
-              html += `
-                             <div class="result-card">
-                                 <h4 style="margin:0 0 10px 0; color:var(--primary);">${item.service_id}</h4>
-                                 <p><strong>Customer:</strong> ${item.name}</p>
-                                 <p><strong>Device:</strong> ${item.brand} ${item.model} (${item.device_type})</p>
-                                 <p><strong>Problem:</strong> ${item.problem}</p>
-                                 <p><strong>Status:</strong> <span class="badge-status ${statusClass}">${item.status}</span></p>
-                                 ${item.assigned_engineer ? `<p><strong>Assigned Engineer:</strong> 🔧 ${item.assigned_engineer}</p>` : ''}
-                                 <p><strong>Device Dropped Off:</strong> ${item.device_received == 1 ? '✅ Yes' : '❌ No (Please drop off at store)'}</p>
-                                 ${imgHtml}
-                                 ${mainWorkflowMsg}
-                                 <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc; font-size: 0.85rem; color: #666;">
-                                     <strong>Note:</strong> This data will be wiped within 30 days. You can use your Service ID for tracking on this page.
-                                 </div>
-                             </div>
-                        `;
-            }
-          });
-          resArea.innerHTML = html;
+          renderResults(result.data);
         } else {
           resArea.innerHTML = `<div style="margin-top:20px; color:#d93025; background:#fce8e6; padding:15px; border-radius:8px;">${result.message || 'No records found.'}</div>`;
         }
