@@ -32,6 +32,24 @@ try {
         while($row = $log_res->fetch_assoc()) {
             $svc['logs'][] = $row;
         }
+
+        // Fetch all images from service_images table
+        $svc['images'] = [];
+        $tableCheck = $conn->query("SHOW TABLES LIKE 'service_images'");
+        if ($tableCheck->num_rows > 0) {
+            $img_stmt = $conn->prepare("SELECT image_path FROM service_images WHERE service_id = ? AND source_table = 'services' ORDER BY id ASC");
+            $img_stmt->bind_param("s", $id);
+            $img_stmt->execute();
+            $img_res = $img_stmt->get_result();
+            while ($row = $img_res->fetch_assoc()) {
+                $svc['images'][] = $row['image_path'];
+            }
+        }
+        // Fallback: if no images in service_images, use image_path
+        if (empty($svc['images']) && !empty($svc['image_path'])) {
+            $svc['images'][] = $svc['image_path'];
+        }
+
         echo json_encode(['status' => 'success', 'data' => $svc]);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'Service not found']);

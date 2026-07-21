@@ -321,21 +321,20 @@ if (!in_array($_SESSION['staff_email'] ?? '', $allowed_crm_emails)) {
                     </div>
 
                     <div class="form-group mt-4">
-                        <label>Upload Device Image <span style="color:var(--danger)">*</span></label>
+                        <label>Upload Device Images <span style="color:var(--danger)">*</span> <small>(Up to 5 photos)</small></label>
                         <div class="image-upload-wrapper">
                             <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
-                                <label
+                                <label class="img-add-btn"
                                     style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; background: #6c757d; color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; transition: background 0.3s;"
                                     onmouseover="this.style.background='#5a6268'"
                                     onmouseout="this.style.background='#6c757d'">
                                     <span>From Gallery</span>
-                                    <input type="file" accept="image/*" class="image-input" style="display: none;">
+                                    <input type="file" accept="image/*" multiple style="display: none;">
                                 </label>
-                                <label class="camera-btn"
+                                <label class="img-add-btn camera-btn"
                                     style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary-color); color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; transition: background 0.3s;">
                                     <span>Take Photo</span>
-                                    <input type="file" accept="image/*" capture="environment" class="image-input"
-                                        style="display: none;">
+                                    <input type="file" accept="image/*" capture="environment" style="display: none;">
                                 </label>
                             </div>
                             <div id="imagePreview"></div>
@@ -356,14 +355,15 @@ if (!in_array($_SESSION['staff_email'] ?? '', $allowed_crm_emails)) {
         </div>
     </div>
 
-    <script src="assets/js/image-processor.js?v=1.4"></script>
+    <script src="assets/js/image-processor.js?v=2.0"></script>
     <script src="assets/js/main.js"></script>
     <script src="assets/js/crm.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Init Image Processor
+            // Init Multi-Image Processor
             if (typeof ImageProcessor !== 'undefined') {
-                ImageProcessor.setupPreview('.image-input', '#imagePreview', false);
+                window.lastProcessedBlobs = [];
+                ImageProcessor.setupMultiPreview('.img-add-btn', '#imagePreview', false);
                 ImageProcessor.initCameraVisibility('.camera-btn');
             }
         });
@@ -403,8 +403,10 @@ if (!in_array($_SESSION['staff_email'] ?? '', $allowed_crm_emails)) {
             btn.innerText = 'Processing...';
 
             const formData = new FormData(e.target);
-            if (window.lastProcessedBlob) {
-                formData.set('image', window.lastProcessedBlob, 'processed_image.jpg');
+            if (window.lastProcessedBlobs && window.lastProcessedBlobs.length > 0) {
+                window.lastProcessedBlobs.forEach((blob, i) => {
+                    formData.append('images[]', blob, `device_image_${i + 1}.jpg`);
+                });
             }
 
             try {
@@ -417,7 +419,7 @@ if (!in_array($_SESSION['staff_email'] ?? '', $allowed_crm_emails)) {
                     document.getElementById('imagePreview').innerHTML = '';
                     if (window.grecaptcha) grecaptcha.reset();
                     document.getElementById('panelSubmitBtn').disabled = true;
-                    window.lastProcessedBlob = null;
+                    window.lastProcessedBlobs = [];
                     setTimeout(() => { msg.innerHTML = ''; switchTab('crm-analytics-tab'); }, 5000);
                 } else {
                     msg.innerHTML = `<span style="color:var(--danger)">Error: ${json.message}</span>`;

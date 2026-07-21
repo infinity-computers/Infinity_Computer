@@ -440,21 +440,20 @@ if ($engResult) {
                     </div>
 
                     <div class="form-group mt-4">
-                        <label>Upload Device Image <span style="color:var(--danger)">*</span></label>
+                        <label>Upload Device Images <span style="color:var(--danger)">*</span> <small>(Up to 5 photos)</small></label>
                         <div class="image-upload-wrapper">
                             <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
-                                <label
+                                <label class="img-add-btn"
                                     style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; background: #6c757d; color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; transition: background 0.3s;"
                                     onmouseover="this.style.background='#5a6268'"
                                     onmouseout="this.style.background='#6c757d'">
                                     <span>From Gallery</span>
-                                    <input type="file" accept="image/*" class="image-input" style="display: none;">
+                                    <input type="file" accept="image/*" multiple style="display: none;">
                                 </label>
-                                <label class="camera-btn"
+                                <label class="img-add-btn camera-btn"
                                     style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary-color); color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; transition: background 0.3s;">
                                     <span>Take Photo</span>
-                                    <input type="file" accept="image/*" capture="environment" class="image-input"
-                                        style="display: none;">
+                                    <input type="file" accept="image/*" capture="environment" style="display: none;">
                                 </label>
                             </div>
                             <div id="imagePreview"></div>
@@ -475,13 +474,14 @@ if ($engResult) {
         </div>
     </div>
 
-    <script src="assets/js/image-processor.js?v=1.4"></script>
+    <script src="assets/js/image-processor.js?v=2.0"></script>
     <script src="assets/js/main.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Init Image Processor
+            // Init Multi-Image Processor
             if (typeof ImageProcessor !== 'undefined') {
-                ImageProcessor.setupPreview('.image-input', '#imagePreview', false);
+                window.lastProcessedBlobs = [];
+                ImageProcessor.setupMultiPreview('.img-add-btn', '#imagePreview', false);
                 ImageProcessor.initCameraVisibility('.camera-btn');
             }
         });
@@ -521,8 +521,10 @@ if ($engResult) {
             btn.innerText = 'Processing...';
 
             const formData = new FormData(e.target);
-            if (window.lastProcessedBlob) {
-                formData.set('image', window.lastProcessedBlob, 'processed_image.jpg');
+            if (window.lastProcessedBlobs && window.lastProcessedBlobs.length > 0) {
+                window.lastProcessedBlobs.forEach((blob, i) => {
+                    formData.append('images[]', blob, `device_image_${i + 1}.jpg`);
+                });
             }
 
             try {
@@ -535,7 +537,7 @@ if ($engResult) {
                     document.getElementById('imagePreview').innerHTML = '';
                     if (window.grecaptcha) grecaptcha.reset();
                     document.getElementById('panelSubmitBtn').disabled = true;
-                    window.lastProcessedBlob = null;
+                    window.lastProcessedBlobs = [];
                     setTimeout(() => { msg.innerHTML = ''; switchTab('track-service-tab'); }, 5000);
                 } else {
                     msg.innerHTML = `<span style="color:var(--danger)">Error: ${json.message}</span>`;
@@ -614,7 +616,8 @@ if ($engResult) {
                 if (svc.assigned_engineer) { html += `<div style="margin-top:15px; background:#f0f9ff; padding:10px 15px; border-radius:8px; border:1px solid #bae6fd;"><label style="color:#0369a1; font-weight:700; font-size:0.75rem; text-transform:uppercase;">Assigned Engineer</label><div style="font-weight:700; color:#0c4a6e; font-size:1.1rem;">🔧 ${svc.assigned_engineer}</div></div>`; }
                 if (source === 'home') { html += `<div class="info-grid" style="margin-top:15px;"><div class="info-item"><label>Schedule</label><div style="font-weight:600; color:var(--text-dark);">${svc.booking_date} at ${svc.time_slot}</div></div><div class="info-item"><label>Address</label><div style="font-weight:600; color:var(--text-dark);">${svc.address}</div></div></div>`; }
                 html += `<div class="info-item" style="margin-top: 15px; background: #fff; border: 1px solid var(--border-color);"><label>Reported Problem / Inquiry</label><div style="color:var(--text-dark);">${svc.problem || 'General Service Inquiry'}</div></div></div>`;
-                if (svc.image_path) { html += `<div class="mt-4"><label style="font-weight:600; color:var(--muted); font-size:0.85rem; text-transform:uppercase;">Attached Image</label><br><img src="../${svc.image_path}" class="device-image-preview" style="max-height:250px; border-radius:10px; margin-top:5px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);" alt="Device"></div>`; }
+                const imgs = (svc.images && svc.images.length > 0) ? svc.images : (svc.image_path ? [svc.image_path] : []);
+                if (imgs.length > 0) { html += `<div class="mt-4"><label style="font-weight:600; color:var(--muted); font-size:0.85rem; text-transform:uppercase;">Device Image${imgs.length > 1 ? 's' : ''}</label><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">${imgs.map(p => `<img src="../${p}" class="device-image-preview" style="height:200px; width:auto; max-width:100%; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); object-fit:cover; cursor:pointer;" onclick="window.open('../${p}','_blank')" alt="Device">`).join('')}</div></div>`; }
                 if (svc.logs && svc.logs.length > 0) { html += `<div style="margin-top: 30px; padding-top: 10px;"><h4 style="margin-bottom:0; color:var(--muted); font-size:0.9rem; text-transform:uppercase;">Detailed Activity Log</h4><ul class="timeline">`; svc.logs.forEach(log => { html += `<li><div class="timeline-bullet"></div><div class="timeline-content"><div class="timeline-meta"><h5 class="timeline-title">${log.status}</h5><span class="timeline-date">${formatDate(log.updated_at)}</span></div>${log.remarks ? `<p class="timeline-text">${log.remarks}</p>` : ''}</div></li>`; }); html += `</ul></div>`; }
                 if (isMulti) html += `</div>`;
                 wrap.innerHTML = html;

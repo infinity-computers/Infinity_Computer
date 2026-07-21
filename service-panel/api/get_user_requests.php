@@ -33,7 +33,21 @@ try {
     $stmt->execute();
     $res = $stmt->get_result();
     $data = [];
+    $hasImgTable = $conn->query("SHOW TABLES LIKE 'service_images'")->num_rows > 0;
     while($row = $res->fetch_assoc()) {
+        $row['images'] = [];
+        if ($hasImgTable) {
+            $img_stmt = $conn->prepare("SELECT image_path FROM service_images WHERE service_id = ? AND source_table = 'user_service_requests' ORDER BY id ASC");
+            $img_stmt->bind_param("s", $row['service_id']);
+            $img_stmt->execute();
+            $img_res = $img_stmt->get_result();
+            while ($img_row = $img_res->fetch_assoc()) {
+                $row['images'][] = $img_row['image_path'];
+            }
+        }
+        if (empty($row['images']) && !empty($row['image_path'])) {
+            $row['images'][] = $row['image_path'];
+        }
         $data[] = $row;
     }
     echo json_encode(['status' => 'success', 'data' => $data]);

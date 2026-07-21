@@ -19,8 +19,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
 
-    if (!isset($_FILES['image']) || $_FILES['image']['error'] != 0) {
-        echo json_encode(['status' => 'error', 'message' => 'Device Image is required.']);
+    if (!isset($_FILES['images']) || empty($_FILES['images']['name'][0])) {
+        echo json_encode(['status' => 'error', 'message' => 'At least one device image is required.']);
         exit;
     }
 
@@ -117,13 +117,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
             require_once 'image_helper.php';
+
+            // Ensure service_images table exists
+            $conn->query("CREATE TABLE IF NOT EXISTS service_images (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                service_id VARCHAR(50) NOT NULL,
+                image_path VARCHAR(255) NOT NULL,
+                source_table VARCHAR(50) DEFAULT 'user_service_requests',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )");
+
             $image_path = null;
-            if(isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-                $filename = processAndSaveImage($_FILES['image'], "../../uploads/service-requests/");
-                if ($filename) {
-                    $image_path = "uploads/service-requests/" . $filename;
+            $uploadDir = "../../uploads/service-requests/";
+            $uploadedPaths = [];
+
+            if (isset($_FILES['images']) && is_array($_FILES['images']['name'])) {
+                $fileCount = min(count($_FILES['images']['name']), 5); // Max 5
+                for ($i = 0; $i < $fileCount; $i++) {
+                    if ($_FILES['images']['error'][$i] == 0) {
+                        $singleFile = [
+                            'name'     => $_FILES['images']['name'][$i],
+                            'type'     => $_FILES['images']['type'][$i],
+                            'tmp_name' => $_FILES['images']['tmp_name'][$i],
+                            'error'    => $_FILES['images']['error'][$i],
+                            'size'     => $_FILES['images']['size'][$i],
+                        ];
+                        $filename = processAndSaveImage($singleFile, $uploadDir);
+                        if ($filename) {
+                            $uploadedPaths[] = "uploads/service-requests/" . $filename;
+                        }
+                    }
                 }
             }
+
+            if (empty($uploadedPaths)) {
+                echo json_encode(['status' => 'error', 'message' => 'Image processing failed. Please try again.']);
+                exit;
+            }
+
+            $image_path = $uploadedPaths[0]; // first image as primary
 
             $address = 'N/A';
             $brand = 'N/A';
@@ -131,6 +163,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $stmt = $conn->prepare("INSERT INTO user_service_requests (service_id, name, phone, email, address, device_type, brand, model, company, problem, image_path, status, device_received) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending Drop-off', 0)");
             $stmt->bind_param("sssssssssss", $service_id, $name, $phone, $email, $address, $service_type, $brand, $device_name, $company, $problem, $image_path);
             $stmt->execute();
+
+            // Insert all images into service_images table
+            $imgStmt = $conn->prepare("INSERT INTO service_images (service_id, image_path, source_table) VALUES (?, ?, 'user_service_requests')");
+            foreach ($uploadedPaths as $path) {
+                $imgStmt->bind_param("ss", $service_id, $path);
+                $imgStmt->execute();
+            }
 
             $conn->commit();
 
@@ -185,13 +224,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Image Processing
         require_once 'image_helper.php';
+
+        // Ensure service_images table exists
+        $conn->query("CREATE TABLE IF NOT EXISTS service_images (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            service_id VARCHAR(50) NOT NULL,
+            image_path VARCHAR(255) NOT NULL,
+            source_table VARCHAR(50) DEFAULT 'services',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+
         $image_path = null;
-        if(isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-            $filename = processAndSaveImage($_FILES['image'], "../../uploads/images/");
-            if ($filename) {
-                $image_path = "uploads/images/" . $filename;
+        $uploadDir = "../../uploads/images/";
+        $uploadedPaths = [];
+
+        if (isset($_FILES['images']) && is_array($_FILES['images']['name'])) {
+            $fileCount = min(count($_FILES['images']['name']), 5); // Max 5
+            for ($i = 0; $i < $fileCount; $i++) {
+                if ($_FILES['images']['error'][$i] == 0) {
+                    $singleFile = [
+                        'name'     => $_FILES['images']['name'][$i],
+                        'type'     => $_FILES['images']['type'][$i],
+                        'tmp_name' => $_FILES['images']['tmp_name'][$i],
+                        'error'    => $_FILES['images']['error'][$i],
+                        'size'     => $_FILES['images']['size'][$i],
+                    ];
+                    $filename = processAndSaveImage($singleFile, $uploadDir);
+                    if ($filename) {
+                        $uploadedPaths[] = "uploads/images/" . $filename;
+                    }
+                }
             }
         }
+
+        if (empty($uploadedPaths)) {
+            echo json_encode(['status' => 'error', 'message' => 'Image processing failed. Please try again.']);
+            exit;
+        }
+
+        $image_path = $uploadedPaths[0]; // first image as primary for backwards compat
 
         $date_received = date('Y-m-d');
         $assigned_at = !empty($assigned_engineer) ? date('Y-m-d H:i:s') : null;
@@ -200,6 +271,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt->bind_param("sissssssss", $service_id, $customer_id, $service_type, $device_name, $company, $problem, $image_path, $assigned_engineer, $assigned_at, $date_received);
         $stmt->execute();
         $service_pk = $conn->insert_id;
+
+        // Insert all images into service_images table
+        $imgStmt = $conn->prepare("INSERT INTO service_images (service_id, image_path, source_table) VALUES (?, ?, 'services')");
+        foreach ($uploadedPaths as $path) {
+            $imgStmt->bind_param("ss", $service_id, $path);
+            $imgStmt->execute();
+        }
 
         $stmt = $conn->prepare("INSERT INTO service_status_logs (service_id, status, remarks) VALUES (?, 'Pending', 'Service request created')");
         $stmt->bind_param("i", $service_pk);

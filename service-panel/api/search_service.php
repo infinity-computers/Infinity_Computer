@@ -36,6 +36,21 @@ try {
         while($log_row = $log_res->fetch_assoc()) {
             $row['logs'][] = $log_row;
         }
+        // Fetch all images
+        $row['images'] = [];
+        $tableCheck = $conn->query("SHOW TABLES LIKE 'service_images'");
+        if ($tableCheck->num_rows > 0) {
+            $img_stmt = $conn->prepare("SELECT image_path FROM service_images WHERE service_id = ? AND source_table = 'services' ORDER BY id ASC");
+            $img_stmt->bind_param("s", $row['service_id']);
+            $img_stmt->execute();
+            $img_res = $img_stmt->get_result();
+            while ($img_row = $img_res->fetch_assoc()) {
+                $row['images'][] = $img_row['image_path'];
+            }
+        }
+        if (empty($row['images']) && !empty($row['image_path'])) {
+            $row['images'][] = $row['image_path'];
+        }
         $results[] = $row;
     }
 
@@ -50,6 +65,21 @@ try {
     $stmt2->execute();
     $res2 = $stmt2->get_result();
     while($row = $res2->fetch_assoc()) {
+        // Fetch all images for web requests
+        $row['images'] = [];
+        $tableCheck2 = $conn->query("SHOW TABLES LIKE 'service_images'");
+        if ($tableCheck2->num_rows > 0) {
+            $img_stmt2 = $conn->prepare("SELECT image_path FROM service_images WHERE service_id = ? AND source_table = 'user_service_requests' ORDER BY id ASC");
+            $img_stmt2->bind_param("s", $row['service_id']);
+            $img_stmt2->execute();
+            $img_res2 = $img_stmt2->get_result();
+            while ($img_row2 = $img_res2->fetch_assoc()) {
+                $row['images'][] = $img_row2['image_path'];
+            }
+        }
+        if (empty($row['images']) && !empty($row['image_path'])) {
+            $row['images'][] = $row['image_path'];
+        }
         $results[] = $row;
     }
 

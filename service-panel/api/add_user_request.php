@@ -85,25 +85,57 @@ try {
 
         // Image Upload & Processing
         require_once __DIR__ . '/image_helper.php';
+
+        // Ensure service_images table exists
+        $conn->query("CREATE TABLE IF NOT EXISTS service_images (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            service_id VARCHAR(50) NOT NULL,
+            image_path VARCHAR(255) NOT NULL,
+            source_table VARCHAR(50) DEFAULT 'user_service_requests',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+
         $image_path = null;
-        if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-            $filename = processAndSaveImage($_FILES['image'], "../../uploads/service-requests/");
-            if ($filename) {
-                $image_path = "uploads/service-requests/" . $filename;
-            } else {
-                ob_clean();
-                echo json_encode(['status' => 'error', 'message' => 'Image processing failed.']);
-                exit;
+        $uploadDir = "../../uploads/service-requests/";
+        $uploadedPaths = [];
+
+        if (isset($_FILES['images']) && is_array($_FILES['images']['name']) && !empty($_FILES['images']['name'][0])) {
+            $fileCount = min(count($_FILES['images']['name']), 5); // Max 5
+            for ($i = 0; $i < $fileCount; $i++) {
+                if ($_FILES['images']['error'][$i] == 0) {
+                    $singleFile = [
+                        'name'     => $_FILES['images']['name'][$i],
+                        'type'     => $_FILES['images']['type'][$i],
+                        'tmp_name' => $_FILES['images']['tmp_name'][$i],
+                        'error'    => $_FILES['images']['error'][$i],
+                        'size'     => $_FILES['images']['size'][$i],
+                    ];
+                    $filename = processAndSaveImage($singleFile, $uploadDir);
+                    if ($filename) {
+                        $uploadedPaths[] = "uploads/service-requests/" . $filename;
+                    }
+                }
             }
-        } else {
+        }
+
+        if (empty($uploadedPaths)) {
             ob_clean();
             echo json_encode(['status' => 'error', 'message' => 'Image is mandatory for submitting a request.']);
             exit;
         }
 
+        $image_path = $uploadedPaths[0]; // first image as primary
+
         $stmt = $conn->prepare("INSERT INTO user_service_requests (service_id, name, phone, email, address, device_type, brand, model, problem, image_path, status, device_received, assigned_engineer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending Approval', 0, 'Suraj')");
         $stmt->bind_param("ssssssssss", $service_id, $name, $phone, $email, $address, $device_type, $brand, $model, $problem, $image_path);
         $stmt->execute();
+
+        // Insert all images into service_images table
+        $imgStmt = $conn->prepare("INSERT INTO service_images (service_id, image_path, source_table) VALUES (?, ?, 'user_service_requests')");
+        foreach ($uploadedPaths as $path) {
+            $imgStmt->bind_param("ss", $service_id, $path);
+            $imgStmt->execute();
+        }
 
         // Send Email Notification to User
         $to = $email;

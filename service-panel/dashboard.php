@@ -372,21 +372,20 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
                     </div>
 
                     <div class="form-group mt-4">
-                        <label>Upload Device Image <span style="color:var(--danger)">*</span></label>
+                        <label>Upload Device Images <span style="color:var(--danger)">*</span> <small>(Up to 5 photos)</small></label>
                         <div class="image-upload-wrapper">
                             <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
-                                <label
+                                <label class="img-add-btn"
                                     style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; background: #6c757d; color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; transition: background 0.3s;"
                                     onmouseover="this.style.background='#5a6268'"
                                     onmouseout="this.style.background='#6c757d'">
                                     <span>From Gallery</span>
-                                    <input type="file" accept="image/*" class="image-input" style="display: none;">
+                                    <input type="file" accept="image/*" multiple style="display: none;">
                                 </label>
-                                <label class="camera-btn"
+                                <label class="img-add-btn camera-btn"
                                     style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary-color); color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; transition: background 0.3s;">
                                     <span>Take Photo</span>
-                                    <input type="file" accept="image/*" capture="environment" class="image-input"
-                                        style="display: none;">
+                                    <input type="file" accept="image/*" capture="environment" style="display: none;">
                                 </label>
                             </div>
                             <div id="imagePreview"></div>
@@ -468,7 +467,7 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
 
     </div>
 
-    <script src="assets/js/image-processor.js?v=1.4"></script>
+    <script src="assets/js/image-processor.js?v=2.0"></script>
     <script src="assets/js/main.js"></script>
     <script>
         const IS_ADMIN = <?php echo json_encode(in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])); ?>;
@@ -477,8 +476,9 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
             loadUserRequests();
             loadHomeServices();
 
-            // Init Image Processor
-            ImageProcessor.setupPreview('.image-input', '#imagePreview', false);
+            // Init Multi-Image Processor
+            window.lastProcessedBlobs = [];
+            ImageProcessor.setupMultiPreview('.img-add-btn', '#imagePreview', false);
             ImageProcessor.initCameraVisibility('.camera-btn');
         });
 
@@ -611,7 +611,13 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
                         </div>
                     `;
 
-                    if (svc.image_path) {
+                    if (svc.images && svc.images.length > 0) {
+                        html += `<div class="mt-4"><label style="font-weight:600; color:var(--muted); font-size:0.85rem; text-transform:uppercase;">Device Image${svc.images.length > 1 ? 's' : ''}:</label><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">`;
+                        svc.images.forEach(imgPath => {
+                            html += `<img src="../${imgPath}" style="height:180px; width:auto; max-width:100%; border-radius:8px; box-shadow:var(--shadow); object-fit:cover; cursor:pointer;" onclick="window.open('../${imgPath}','_blank')" title="Click to open full size">`;
+                        });
+                        html += `</div></div>`;
+                    } else if (svc.image_path) {
                         html += `<div class="mt-4"><label style="font-weight:600; color:var(--muted); font-size:0.85rem; text-transform:uppercase;">Device Image:</label><br><img src="../${svc.image_path}" style="max-height:200px; border-radius:8px; margin-top:5px; box-shadow:var(--shadow);"></div>`;
                     }
 
@@ -700,8 +706,10 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
             btn.innerText = 'Processing...';
 
             const formData = new FormData(e.target);
-            if (window.lastProcessedBlob) {
-                formData.set('image', window.lastProcessedBlob, 'processed_image.jpg');
+            if (window.lastProcessedBlobs && window.lastProcessedBlobs.length > 0) {
+                window.lastProcessedBlobs.forEach((blob, i) => {
+                    formData.append('images[]', blob, `device_image_${i + 1}.jpg`);
+                });
             }
 
             try {
@@ -714,7 +722,7 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
                     document.getElementById('imagePreview').innerHTML = '';
                     if (window.grecaptcha) grecaptcha.reset();
                     document.getElementById('panelSubmitBtn').disabled = true;
-                    window.lastProcessedBlob = null;
+                    window.lastProcessedBlobs = [];
                     setTimeout(() => { msg.innerHTML = ''; switchTab('main-workflow'); }, 3000);
                 } else {
                     msg.innerHTML = `<span style="color:var(--danger)">Error: ${json.message}</span>`;
@@ -759,8 +767,10 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
                     let drCheck = `<div style="margin-top:5px; font-size:0.85rem;"><label><input type="checkbox" ${req.device_received == 1 ? 'checked disabled' : ''} onchange="updateUserReq(${req.id}, '', this.checked ? 1 : 0, '')"> Device Received</label></div>`;
                     if (req.status === 'Rejected') drCheck = '';
 
+                    const reqImgs = (req.images && req.images.length > 0) ? req.images : (req.image_path ? [req.image_path] : []);
+                    const reqImgHtml = reqImgs.length > 0 ? `<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:4px;">${reqImgs.map((p,i) => `<a href="../${p}" target="_blank" style="font-size:0.78rem;">Photo ${i+1}</a>`).join(' | ')}</div>` : '';
                     tr.innerHTML = `
-                        <td><strong>${req.service_id}</strong><div style="font-size:0.8rem;"><a href="../${req.image_path}" target="_blank">View Image</a></div></td>
+                        <td><strong>${req.service_id}</strong>${reqImgHtml}</td>
                         <td>${formatDate(req.created_at)}</td>
                         <td><div style="font-weight:600;">${req.name}</div><div style="font-size:0.85rem;">${req.phone}</div></td>
                         <td><div style="font-weight:600; font-size:0.9rem;">${req.device_type} - ${req.brand} ${req.model}</div><div style="font-size:0.85rem; color:#555;">${req.problem}</div></td>
