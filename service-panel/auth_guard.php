@@ -45,4 +45,41 @@ if (strpos($_SERVER['PHP_SELF'], '/api/') === false) {
         echo "<script>setTimeout(function(){window.location.href='login.php?expired=1';}," . $remainingMs . ");</script>\n";
     }
 }
+
+if (!function_exists('getStaffRole')) {
+    function getStaffRole() {
+        $email = strtolower($_SESSION['staff_email'] ?? '');
+        if ($email === 'icc@infinitycomputer.in') return 'Super Admin';
+        if ($email === 'suraj@staff.infinitycomputer.in') return 'Admin/Accounts';
+        return $_SESSION['staff_role'] ?? 'Engineer';
+    }
+}
+
+if (!function_exists('isSuperAdmin')) {
+    function isSuperAdmin() {
+        return getStaffRole() === 'Super Admin';
+    }
+}
+
+if (!function_exists('isAdmin')) {
+    function isAdmin() {
+        $role = getStaffRole();
+        return $role === 'Super Admin' || $role === 'Admin/Accounts';
+    }
+}
+
+if (!function_exists('isEngineer')) {
+    function isEngineer() {
+        return getStaffRole() === 'Engineer';
+    }
+}
+
+if (!function_exists('getStaffName')) {
+    function getStaffName() {
+        if (!empty($_SESSION['staff_name'])) return $_SESSION['staff_name'];
+        $email = $_SESSION['staff_email'] ?? 'Staff';
+        $parts = explode('@', $email);
+        return ucfirst($parts[0]);
+    }
+}
 ?>

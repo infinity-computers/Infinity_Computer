@@ -314,6 +314,40 @@ if ($engResult) {
             margin-top: 1.5rem;
         }
     </style>
+<style>
+/* Modal styles */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.modal {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+}
+.modal.active {
+    display: flex;
+}
+.modal-header {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+.modal-close {
+    cursor: pointer;
+    float: right;
+    font-size: 1.2rem;
+    line-height: 1;
+    margin-left: 10px;
+}
+</style>
 </head>
 
 <body>
@@ -665,7 +699,15 @@ if ($engResult) {
                 if (imgs.length > 0) { html += `<div class="mt-4"><label style="font-weight:600; color:var(--muted); font-size:0.85rem; text-transform:uppercase;">Device Image${imgs.length > 1 ? 's' : ''}</label><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">${imgs.map(p => `<img src="../${p}" class="device-image-preview" style="height:200px; width:auto; max-width:100%; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); object-fit:cover; cursor:pointer;" onclick="window.open('../${p}','_blank')" alt="Device">`).join('')}</div></div>`; }
                 if (svc.logs && svc.logs.length > 0) { html += `<div style="margin-top: 30px; padding-top: 10px;"><h4 style="margin-bottom:0; color:var(--muted); font-size:0.9rem; text-transform:uppercase;">Detailed Activity Log</h4><ul class="timeline">`; svc.logs.forEach(log => { html += `<li><div class="timeline-bullet"></div><div class="timeline-content"><div class="timeline-meta"><h5 class="timeline-title">${log.status}</h5><span class="timeline-date">${formatDate(log.updated_at)}</span></div>${log.remarks ? `<p class="timeline-text">${log.remarks}</p>` : ''}</div></li>`; }); html += `</ul></div>`; }
                 if (isMulti) html += `</div>`;
-                wrap.innerHTML = html;
+                wrap.innerHTML = html + `
+                <div class="action-buttons" style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-primary" onclick="openLogCallModal('${svc.service_id}')">Log Call</button>
+                    <button class="btn btn-sm btn-secondary" onclick="openCustodyTransferModal('${svc.service_id}')">Custody Transfer</button>
+                    <button class="btn btn-sm btn-info" onclick="openReplacedPartModal('${svc.service_id}')">Record Part Replaced</button>
+                    <button class="btn btn-sm btn-success" onclick="openSubmitWorkModal('${svc.service_id}')">Submit Work</button>
+                    <button class="btn btn-sm btn-warning" onclick="openAdminVerifyModal('${svc.service_id}')">Admin Verify</button>
+                    <button class="btn btn-sm btn-danger" onclick="openCloseTicketModal('${svc.service_id}')">Close Ticket</button>
+                </div>`;
                 container.appendChild(wrap);
             });
         }

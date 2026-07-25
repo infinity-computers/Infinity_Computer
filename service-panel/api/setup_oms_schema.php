@@ -89,8 +89,13 @@ try {
     addColumnIfNotExists($conn, 'engineers', 'phone', "VARCHAR(20) DEFAULT NULL");
     addColumnIfNotExists($conn, 'engineers', 'last_activity_at', "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
-    // Seed default Super Admin role for specific emails/users if present
-    $conn->query("UPDATE engineers SET role = 'Super Admin' WHERE name IN ('Suraj', 'icc') OR email IN ('suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in')");
+    // Seed default roles explicitly
+    $conn->query("INSERT IGNORE INTO engineers (name, email, role) VALUES ('icc', 'icc@infinitycomputer.in', 'Super Admin')");
+    $conn->query("INSERT IGNORE INTO engineers (name, email, role) VALUES ('Suraj', 'suraj@staff.infinitycomputer.in', 'Admin/Accounts')");
+
+    $conn->query("UPDATE engineers SET role = 'Engineer' WHERE role IS NULL OR role = ''");
+    $conn->query("UPDATE engineers SET role = 'Super Admin' WHERE name = 'icc' OR email = 'icc@infinitycomputer.in'");
+    $conn->query("UPDATE engineers SET role = 'Admin/Accounts' WHERE name = 'Suraj' OR email = 'suraj@staff.infinitycomputer.in'");
 
     // 3. Extend services & user_service_requests tables for Device History, Timeline Metrics, and Internal Revenue
     $targetServiceTables = ['services', 'user_service_requests'];
