@@ -390,7 +390,7 @@ if ($engResult) {
                         </div>
                         <div class="form-group">
                             <label>Service Type <span style="color:var(--danger)">*</span></label>
-                            <select name="service_type" class="form-control" required>
+                            <select name="service_type" id="service_type" class="form-control" required>
                                 <option value="">Select Type...</option>
                                 <option value="Laptop Repair">Laptop Repair</option>
                                 <option value="Mobile Repair">Mobile Repair</option>
@@ -399,8 +399,15 @@ if ($engResult) {
                                 <option value="CCTV Service">CCTV Service</option>
                                 <option value="Network Setup">Network Setup</option>
                                 <option value="Data Recovery">Data Recovery</option>
+                                <option value="Display/Screen Repair">Display/Screen Repair</option>
+                                <option value="PC repair">PC repair</option>
+                                <option value="HDD repair">HDD repair</option>
                                 <option value="Other">Other</option>
                             </select>
+                        </div>
+                        <div class="form-group" id="other_service_type_container" style="display: none;">
+                            <label>Specify Other Service Type <span style="color:var(--danger)">*</span></label>
+                            <input type="text" id="other_service_type" name="other_service_type" class="form-control" placeholder="Please specify service type...">
                         </div>
                         <div class="form-group">
                             <label>Device Name / Model <span style="color:var(--danger)">*</span></label>
@@ -484,6 +491,24 @@ if ($engResult) {
                 ImageProcessor.setupMultiPreview('.img-add-btn', '#imagePreview', false);
                 ImageProcessor.initCameraVisibility('.camera-btn');
             }
+
+            // Toggle other service type input
+            const serviceTypeSelect = document.getElementById('service_type');
+            const otherServiceTypeContainer = document.getElementById('other_service_type_container');
+            const otherServiceTypeInput = document.getElementById('other_service_type');
+
+            if (serviceTypeSelect) {
+                serviceTypeSelect.addEventListener('change', function() {
+                    if (this.value === 'Other') {
+                        otherServiceTypeContainer.style.display = 'block';
+                        otherServiceTypeInput.required = true;
+                    } else {
+                        otherServiceTypeContainer.style.display = 'none';
+                        otherServiceTypeInput.required = false;
+                        otherServiceTypeInput.value = '';
+                    }
+                });
+            }
         });
 
         function switchTab(id) {
@@ -521,6 +546,20 @@ if ($engResult) {
             btn.innerText = 'Processing...';
 
             const formData = new FormData(e.target);
+
+            // Overwrite service_type with other_service_type if "Other" is selected
+            if (formData.get('service_type') === 'Other') {
+                const otherVal = formData.get('other_service_type') ? formData.get('other_service_type').trim() : '';
+                if (!otherVal) {
+                    const msg = document.getElementById('formMsg');
+                    msg.innerHTML = `<span style="color:var(--danger)">Please specify the other service type.</span>`;
+                    btn.disabled = false;
+                    btn.innerText = 'Submit Request';
+                    return;
+                }
+                formData.set('service_type', otherVal);
+            }
+
             if (window.lastProcessedBlobs && window.lastProcessedBlobs.length > 0) {
                 window.lastProcessedBlobs.forEach((blob, i) => {
                     formData.append('images[]', blob, `device_image_${i + 1}.jpg`);
@@ -534,6 +573,12 @@ if ($engResult) {
                 if (json.status === 'success') {
                     msg.innerHTML = `<span style="color:var(--success)">${json.message}.<br>Service ID: <strong style="font-size:1.4rem;">${json.service_id}</strong></span>`;
                     e.target.reset();
+                    const otherServiceTypeContainer = document.getElementById('other_service_type_container');
+                    const otherServiceTypeInput = document.getElementById('other_service_type');
+                    if (otherServiceTypeContainer) {
+                        otherServiceTypeContainer.style.display = 'none';
+                        otherServiceTypeInput.required = false;
+                    }
                     document.getElementById('imagePreview').innerHTML = '';
                     if (window.grecaptcha) grecaptcha.reset();
                     document.getElementById('panelSubmitBtn').disabled = true;

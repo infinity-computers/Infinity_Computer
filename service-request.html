@@ -155,8 +155,15 @@
                   <option value="Printer Service">Printer Service</option>
                   <option value="Network Setup">Network Equipment</option>
                   <option value="Data Recovery">Storage Device</option>
+                  <option value="Display/Screen Repair">Display/Screen Repair</option>
+                  <option value="PC repair">PC repair</option>
+                  <option value="HDD repair">HDD repair</option>
                   <option value="Other">Other</option>
                 </select>
+              </div>
+              <div class="form-row" id="other_device_type_container" style="display: none;">
+                <label for="other_device_type">Specify Other Device Type <span style="color:red">*</span></label>
+                <input id="other_device_type" name="other_device_type" type="text" placeholder="Please specify device type...">
               </div>
               <div class="form-row">
                 <label for="brand">Brand</label>
@@ -261,6 +268,22 @@
       console.error("ImageProcessor.js not loaded. Image uploads may fail.");
     }
 
+    // Toggle other device type input
+    const deviceTypeSelect = document.getElementById('device_type');
+    const otherDeviceTypeContainer = document.getElementById('other_device_type_container');
+    const otherDeviceTypeInput = document.getElementById('other_device_type');
+
+    deviceTypeSelect.addEventListener('change', function() {
+      if (this.value === 'Other') {
+        otherDeviceTypeContainer.style.display = 'block';
+        otherDeviceTypeInput.required = true;
+      } else {
+        otherDeviceTypeContainer.style.display = 'none';
+        otherDeviceTypeInput.required = false;
+        otherDeviceTypeInput.value = '';
+      }
+    });
+
     document.getElementById('serviceRequestForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('submitBtn');
@@ -283,6 +306,21 @@
       }
 
       const formData = new FormData(form);
+
+      // Overwrite device_type with other_device_type if "Other" is selected
+      if (formData.get('device_type') === 'Other') {
+        const otherVal = formData.get('other_device_type') ? formData.get('other_device_type').trim() : '';
+        if (!otherVal) {
+          statusBox.style.display = 'block';
+          statusBox.style.color = '#d93025';
+          statusBox.style.backgroundColor = '#fce8e6';
+          statusBox.innerText = 'Please specify the other device type.';
+          btn.disabled = false;
+          btn.innerHTML = 'Submit Request';
+          return;
+        }
+        formData.set('device_type', otherVal);
+      }
 
       // Append all processed images as images[]
       window.lastProcessedBlobs.forEach((blob, i) => {
@@ -316,6 +354,8 @@
           statusBox.style.backgroundColor = '#d4edda';
           statusBox.innerHTML = `${result.message}<br>Your Service ID is: <strong style="font-size:1.3rem;">${result.service_id}</strong><br>Please save this ID to track your request.`;
            form.reset();
+           otherDeviceTypeContainer.style.display = 'none';
+           otherDeviceTypeInput.required = false;
            document.getElementById('imagePreview').innerHTML = ''; // Clear preview
            if (window.grecaptcha) grecaptcha.reset();
            window.lastProcessedBlobs = [];
