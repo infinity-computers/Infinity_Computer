@@ -2,6 +2,21 @@
 session_start();
 header('Content-Type: application/json');
 
+// Global error/exception handlers — always return JSON
+set_exception_handler(function($e) {
+    header('Content-Type: application/json');
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'Server error: ' . $e->getMessage()]);
+    exit;
+});
+
+set_error_handler(function($errno, $errstr) {
+    header('Content-Type: application/json');
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'Server error: ' . $errstr]);
+    exit;
+});
+
 $allowedEmails = [
     'akshar@staff.infinitycomputer.in',
     'karan@staff.infinitycomputer.in',
@@ -15,8 +30,6 @@ $allowedEmails = [
     'rathorjatin70@gmail.com'
 ];
 
-require_once __DIR__ . '/../config/db.php';
-
 $input = json_decode(file_get_contents('php://input'), true);
 $email = trim(strtolower($input['email'] ?? ''));
 
@@ -25,20 +38,27 @@ if (empty($email)) {
     exit;
 }
 
-// Fetch user from engineers table
-$stmt = $conn->prepare("SELECT name FROM engineers WHERE email = ?");
 $staffName = '';
-if ($stmt) {
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $staffData = $result->fetch_assoc();
-    if ($staffData) {
-        $staffName = $staffData['name'];
+
+// Try DB lookup
+try {
+    require_once __DIR__ . '/../config/db.php';
+    $stmt = $conn->prepare("SELECT name FROM engineers WHERE LOWER(email) = LOWER(?)");
+    if ($stmt) {
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $staffData = $result->fetch_assoc();
+        if ($staffData) {
+            $staffName = $staffData['name'];
+        }
+        $stmt->close();
     }
+} catch (Exception $e) {
+    // DB unavailable — fall through to allowedEmails check
 }
 
-// Fallback check
+// Fallback: check allowed list
 if (empty($staffName)) {
     if (!in_array($email, $allowedEmails)) {
         echo json_encode(['status' => 'error', 'message' => 'Unauthorized email address']);
@@ -58,10 +78,10 @@ if (isset($_SESSION['otp_last_sent']) && (time() - $_SESSION['otp_last_sent']) <
 $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
 
 // Store in session
-$_SESSION['otp_code'] = $otp;
-$_SESSION['otp_email'] = $email;
+$_SESSION['otp_code']      = $otp;
+$_SESSION['otp_email']     = $email;
 $_SESSION['otp_timestamp'] = time();
-$_SESSION['otp_attempts'] = 0;
+$_SESSION['otp_attempts']  = 0;
 $_SESSION['otp_last_sent'] = time();
 
 // Send email
@@ -70,11 +90,12 @@ $sent = sendOtpEmail($email, $staffName, $otp);
 if ($sent) {
     echo json_encode(['status' => 'success', 'message' => 'OTP sent to your email']);
 } else {
-    echo json_encode(['status' => 'success', 'message' => 'OTP generated successfully', 'debug_otp' => $otp]);
+    // On local XAMPP mail() usually fails — still return success so user can login
+    echo json_encode(['status' => 'success', 'message' => 'OTP generated (check email or server logs)', 'debug_otp' => $otp]);
 }
 
 function sendOtpEmail($email, $name, $otp) {
-    $subject = "Infinity Computer - Staff Login OTP";
+    $subject  = "Infinity Computer - Staff Login OTP";
     $headers  = "MIME-Version: 1.0\r\n";
     $headers .= "Content-type:text/html;charset=UTF-8\r\n";
     $headers .= "From: Infinity Computer <noreply@infinitycomputer.in>\r\n";

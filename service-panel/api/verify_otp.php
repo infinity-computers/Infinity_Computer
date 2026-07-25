@@ -2,6 +2,21 @@
 session_start();
 header('Content-Type: application/json');
 
+// Catch any uncaught exceptions/errors and return JSON
+set_exception_handler(function($e) {
+    header('Content-Type: application/json');
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'Server error: ' . $e->getMessage()]);
+    exit;
+});
+
+set_error_handler(function($errno, $errstr) {
+    header('Content-Type: application/json');
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'Server error: ' . $errstr]);
+    exit;
+});
+
 // Allow only POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -12,50 +27,53 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $input = json_decode(file_get_contents('php://input'), true);
 $enteredOtp = trim($input['otp'] ?? '');
 
-function respond(array $payload, int $code = 200) {
-    http_response_code($code);
-    echo json_encode($payload);
+// Ensure OTP session data exists
+if (!isset($_SESSION['otp_code']) || !isset($_SESSION['otp_email'])) {
+    echo json_encode(['status' => 'error', 'message' => 'No OTP request found. Please request a new OTP.', 'expired' => true]);
     exit;
 }
 
-// Ensure OTP session data exists
-if (!isset($_SESSION['otp_code']) || !isset($_SESSION['otp_email'])) {
-    respond(['status' => 'error', 'message' => 'No OTP request found. Please request a new OTP.', 'expired' => true]);
-}
-
 // OTP expiration check (5 minutes)
-if ((time() - $_SESSION['otp_timestamp']) > 300) {
+if (!isset($_SESSION['otp_timestamp']) || (time() - $_SESSION['otp_timestamp']) > 300) {
     unset($_SESSION['otp_code'], $_SESSION['otp_email'], $_SESSION['otp_timestamp'], $_SESSION['otp_attempts']);
-    respond(['status' => 'error', 'message' => 'OTP has expired. Please request a new one.', 'expired' => true]);
+    echo json_encode(['status' => 'error', 'message' => 'OTP has expired. Please request a new one.', 'expired' => true]);
+    exit;
 }
 
 // Max attempts check
 if (isset($_SESSION['otp_attempts']) && $_SESSION['otp_attempts'] >= 3) {
-    respond(['status' => 'error', 'message' => 'Too many failed attempts. Try again later.', 'blocked' => true]);
+    echo json_encode(['status' => 'error', 'message' => 'Too many failed attempts. Try again later.', 'blocked' => true]);
+    exit;
 }
 
 // Validate OTP format
 if (empty($enteredOtp) || strlen($enteredOtp) !== 6) {
-    respond(['status' => 'error', 'message' => 'Please enter a valid 6-digit OTP']);
+    echo json_encode(['status' => 'error', 'message' => 'Please enter a valid 6-digit OTP']);
+    exit;
 }
 
-// Successful OTP verification
+// Verify OTP value
 if ($enteredOtp === $_SESSION['otp_code']) {
-    require_once __DIR__ . '/../config/db.php';
+    // Load DB connection safely
     $email = $_SESSION['otp_email'];
     $role  = 'Engineer';
     $name  = 'Staff Member';
 
-    $stmt = $conn->prepare("SELECT name, role FROM engineers WHERE email = ? OR LOWER(email) = LOWER(?)");
-    if ($stmt) {
-        $stmt->bind_param('ss', $email, $email);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        if ($row = $res->fetch_assoc()) {
-            $name = $row['name'];
-            $role = $row['role'] ?: 'Engineer';
+    try {
+        require_once __DIR__ . '/../config/db.php';
+        $stmt = $conn->prepare("SELECT name, role FROM engineers WHERE LOWER(email) = LOWER(?)");
+        if ($stmt) {
+            $stmt->bind_param('s', $email);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($row = $res->fetch_assoc()) {
+                $name = $row['name'];
+                $role = $row['role'] ?: 'Engineer';
+            }
+            $stmt->close();
         }
-        $stmt->close();
+    } catch (Exception $e) {
+        // DB failed — still allow login with defaults, don't block
     }
 
     // Role overrides for known admin accounts
@@ -67,25 +85,27 @@ if ($enteredOtp === $_SESSION['otp_code']) {
     }
 
     // Set authenticated staff session
-    $_SESSION['staff_logged_in']   = true;
-    $_SESSION['staff_email']       = $email;
-    $_SESSION['staff_name']        = $name;
-    $_SESSION['staff_role']        = $role;
-    $_SESSION['staff_login_time']  = time();
+    $_SESSION['staff_logged_in']     = true;
+    $_SESSION['staff_email']         = $email;
+    $_SESSION['staff_name']          = $name;
+    $_SESSION['staff_role']          = $role;
+    $_SESSION['staff_login_time']    = time();
     $_SESSION['staff_last_activity'] = time();
 
     // Clean OTP related session data
     unset($_SESSION['otp_code'], $_SESSION['otp_timestamp'], $_SESSION['otp_attempts'], $_SESSION['otp_last_sent']);
 
-    respond(['status' => 'success', 'message' => 'Login successful!', 'redirect' => 'index.php']);
+    echo json_encode(['status' => 'success', 'message' => 'Login successful!', 'redirect' => 'index.php']);
+    exit;
 } else {
     // Increment failed attempts
     $_SESSION['otp_attempts'] = ($_SESSION['otp_attempts'] ?? 0) + 1;
     $remaining = max(0, 3 - $_SESSION['otp_attempts']);
     if ($remaining <= 0) {
-        respond(['status' => 'error', 'message' => 'Too many failed attempts. Try again later.', 'blocked' => true]);
+        echo json_encode(['status' => 'error', 'message' => 'Too many failed attempts. Try again later.', 'blocked' => true]);
     } else {
-        respond(['status' => 'error', 'message' => "Invalid OTP. {$remaining} attempt(s) remaining.", 'remaining' => $remaining]);
+        echo json_encode(['status' => 'error', 'message' => "Invalid OTP. {$remaining} attempt(s) remaining.", 'remaining' => $remaining]);
     }
+    exit;
 }
 ?>
