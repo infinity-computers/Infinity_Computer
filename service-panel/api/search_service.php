@@ -76,23 +76,13 @@ try {
     }
 
     // 2. Search User Service Requests (Web Requests)
-    if (isEngineer()) {
-        $stmt2 = $conn->prepare("
-            SELECT *, 'web_request' as source_type 
-            FROM user_service_requests 
-            WHERE (service_id = ? OR phone = ? OR name = ?) AND assigned_engineer = ?
-            ORDER BY created_at DESC
-        ");
-        $stmt2->bind_param("ssss", $query, $query, $query, getStaffName());
-    } else {
-        $stmt2 = $conn->prepare("
-            SELECT *, 'web_request' as source_type 
-            FROM user_service_requests 
-            WHERE service_id = ? OR phone = ? OR name = ? 
-            ORDER BY created_at DESC
-        ");
-        $stmt2->bind_param("sss", $query, $query, $query);
-    }
+    $stmt2 = $conn->prepare("
+        SELECT *, 'web_request' as source_type 
+        FROM user_service_requests 
+        WHERE service_id = ? OR phone = ? OR name = ? 
+        ORDER BY created_at DESC
+    ");
+    $stmt2->bind_param("sss", $query, $query, $query);
     $stmt2->execute();
     $res2 = $stmt2->get_result();
     while($row = $res2->fetch_assoc()) {

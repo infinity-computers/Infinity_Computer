@@ -11,6 +11,9 @@ set_exception_handler(function($e) {
 });
 
 set_error_handler(function($errno, $errstr) {
+    if (!(error_reporting() & $errno)) {
+        return false;
+    }
     header('Content-Type: application/json');
     http_response_code(500);
     echo json_encode(['status' => 'error', 'message' => 'Server error: ' . $errstr]);
