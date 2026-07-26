@@ -673,3 +673,129 @@ const CRM = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', CRM.init);
+
+// CRM Customer Lookup Functions
+async function searchCRMCustomer() {
+    const input = document.getElementById('customerSearchInput');
+    const query = input.value.trim();
+    if (!query) return;
+
+    const resultsDiv = document.getElementById('customerSearchResults');
+    resultsDiv.innerHTML = '<p style="padding:10px; color:#64748b;">Searching customer directory...</p>';
+    resultsDiv.classList.remove('hidden');
+
+    try {
+        const res = await fetch(`api/search_crm_customers.php?q=${encodeURIComponent(query)}`);
+        const json = await res.json();
+        if (json.status === 'success' && json.data.length > 0) {
+            let html = '<ul style="list-style:none; padding:0; margin:0;">';
+            json.data.forEach(cust => {
+                html += `
+                    <li style="padding:8px 12px; cursor:pointer; border-bottom:1px solid #edf2f7;" 
+                        onclick="selectCRMCustomer('${cust.customer_id}', '${cust.phone}')"
+                        onmouseover="this.style.background='#f1f5f9'"
+                        onmouseout="this.style.background='none'">
+                        <strong>${cust.name}</strong> - ${cust.phone} (${cust.email || 'No Email'})
+                    </li>
+                `;
+            });
+            html += '</ul>';
+            resultsDiv.innerHTML = html;
+        } else {
+            resultsDiv.innerHTML = '<p style="padding:10px; color:#ef4444;">No customers found. Try searching another term.</p>';
+        }
+    } catch (e) {
+        resultsDiv.innerHTML = '<p style="padding:10px; color:#ef4444;">Error looking up customer.</p>';
+    }
+}
+
+async function selectCRMCustomer(customerId, phone) {
+    document.getElementById('customerSearchResults').classList.add('hidden');
+    
+    const profileDiv = document.getElementById('crmCustomerProfile');
+    profileDiv.classList.remove('hidden');
+
+    // Fill profile placeholders with loading status
+    document.getElementById('crmProfileName').innerText = 'Loading...';
+    document.getElementById('crmProfileContact').innerText = '';
+    document.getElementById('crmProfileTotalSpent').innerText = '₹0';
+    document.getElementById('crmProfileDevices').innerHTML = '<li>Loading devices...</li>';
+    document.getElementById('crmProfileCalls').innerHTML = '<p>Loading calls...</p>';
+    document.getElementById('crmProfileTickets').innerHTML = '<p>Loading tickets...</p>';
+
+    try {
+        const res = await fetch(`api/get_crm_customer_history.php?customer_id=${customerId}&phone=${phone}`);
+        const json = await res.json();
+        if (json.status === 'success' && json.customer) {
+            const cust = json.customer;
+            document.getElementById('crmProfileName').innerText = cust.name;
+            document.getElementById('crmProfileContact').innerText = `📞 ${cust.phone} | ✉️ ${cust.email || 'N/A'}`;
+            document.getElementById('crmProfileTotalSpent').innerText = '₹' + cust.total_spent.toLocaleString('en-IN');
+
+            // Unique Devices
+            const devUl = document.getElementById('crmProfileDevices');
+            devUl.innerHTML = '';
+            if (cust.unique_devices.length === 0) {
+                devUl.innerHTML = '<li>No serviced devices recorded.</li>';
+            } else {
+                cust.unique_devices.forEach(dev => {
+                    const li = document.createElement('li');
+                    li.innerText = dev;
+                    devUl.appendChild(li);
+                });
+            }
+
+            // Call Logs
+            const callsDiv = document.getElementById('crmProfileCalls');
+            callsDiv.innerHTML = '';
+            if (cust.call_logs.length === 0) {
+                callsDiv.innerHTML = '<p style="color:#64748b; padding:5px;">No customer call history found.</p>';
+            } else {
+                cust.call_logs.forEach(call => {
+                    const div = document.createElement('div');
+                    div.style.cssText = 'background:#f8f9fa; border-left:3px solid var(--primary-color); padding:8px 10px; border-radius:4px;';
+                    div.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; font-weight:600; font-size:0.8rem; color:#475569;">
+                            <span>${call.service_id} - ${call.call_status}</span>
+                            <span style="margin-left:auto;">${new Date(call.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div style="color:#64748b; margin-top:2px;">${call.notes || 'No notes added'}</div>
+                    `;
+                    callsDiv.appendChild(div);
+                });
+            }
+
+            // Ticket History
+            const ticketsDiv = document.getElementById('crmProfileTickets');
+            ticketsDiv.innerHTML = '';
+            if (cust.tickets.length === 0) {
+                ticketsDiv.innerHTML = '<p style="color:#64748b; padding:5px;">No service requests found.</p>';
+            } else {
+                cust.tickets.forEach(tick => {
+                    const div = document.createElement('div');
+                    div.style.cssText = 'border:1px solid #e2e8f0; padding:10px 12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;';
+                    div.innerHTML = `
+                        <div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <strong style="color:var(--primary-dark);">${tick.service_id}</strong>
+                                <span style="font-size:0.7rem; background:#f1f5f9; padding:2px 6px; border-radius:4px; font-weight:600; text-transform:uppercase;">${tick.source_label}</span>
+                            </div>
+                            <div style="font-size:0.85rem; color:#475569; margin-top:2px;">${tick.device_name || 'N/A'}</div>
+                            <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Received: ${new Date(tick.created_at).toLocaleDateString()}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-weight:700; color:var(--text-dark);">₹${tick.service_value_rupees.toLocaleString('en-IN')}</div>
+                            <span style="font-size:0.75rem; font-weight:600; color:#1f5fae">${tick.status}</span>
+                        </div>
+                    `;
+                    ticketsDiv.appendChild(div);
+                });
+            }
+        } else {
+            alert('Failed to load profile.');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Error loading profile.');
+    }
+}

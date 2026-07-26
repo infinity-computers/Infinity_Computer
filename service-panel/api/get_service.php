@@ -24,6 +24,10 @@ try {
     $svc = $res->fetch_assoc();
 
     if($svc) {
+        if (isEngineer() && $svc['assigned_engineer'] !== getStaffName()) {
+            echo json_encode(['status' => 'error', 'message' => 'Access Denied: You are not assigned to this service ticket.']);
+            exit;
+        }
         $log_stmt = $conn->prepare("SELECT * FROM service_status_logs WHERE service_id = ? ORDER BY updated_at DESC");
         $log_stmt->bind_param("i", $svc['id']);
         $log_stmt->execute();

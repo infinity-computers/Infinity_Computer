@@ -140,6 +140,69 @@ if ($engResult) {
             width: 60% !important;
             left: 20% !important;
         }
+
+        /* Live Operations Dashboard Counters */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: #fff;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.01), var(--shadow);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border-left: 5px solid var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.06), var(--shadow);
+        }
+        .stat-card.active-filter {
+            border-left-width: 8px;
+            background: rgba(31, 95, 174, 0.04);
+            box-shadow: inset 0 0 0 1px var(--primary-color), var(--shadow);
+        }
+        .stat-card .stat-label {
+            font-size: 0.8rem;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .stat-card .stat-val {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin: 0;
+        }
+        .warning-badge {
+            background: #ef4444;
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        .status-select {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid var(--border-color);
+            background: #fff;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -162,6 +225,8 @@ if ($engResult) {
                 <li><a href="javascript:void(0)" id="headerDashboard" onclick="switchTab('main-workflow')" class="header-active">Dashboard</a></li>
                 <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
                 <li><a href="crm.php">CRM Analytics</a></li>
+                <li><a href="billing.php">Billing</a></li>
+                <li><a href="reports.php">Reports</a></li>
                 <?php endif; ?>
                 <li><a href="task_management.php">Task Management</a></li>
                 <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
@@ -209,6 +274,9 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
             <button class="tab-btn active" onclick="switchTab('main-workflow')">Active Jobs</button>
             <button class="tab-btn" onclick="switchTab('user-requests')">User Requests</button>
             <button class="tab-btn" onclick="switchTab('home-services')">Home Services</button>
+            <?php if (isSuperAdmin()): ?>
+            <button class="tab-btn" onclick="switchTab('activity-log-tab')">Activity Log</button>
+            <?php endif; ?>
 
             <button class="tab-btn hidden-tab" id="detailsTabBtn" onclick="switchTab('details-tab')">Manage
                 Service</button>
@@ -216,6 +284,38 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
 
         <!-- 1. ACTIVE JOBS TAB -->
         <div id="main-workflow" class="tab-pane active">
+            <!-- Stats Grid -->
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card" data-filter="new_calls" style="border-left-color: #f59e0b;">
+                    <div class="stat-label">New Calls</div>
+                    <div class="stat-val" id="count-new-calls">0</div>
+                </div>
+                <div class="stat-card" data-filter="assigned" style="border-left-color: #3b82f6;">
+                    <div class="stat-label">Assigned</div>
+                    <div class="stat-val" id="count-assigned">0</div>
+                </div>
+                <div class="stat-card" data-filter="inprogress" style="border-left-color: #06b6d4;">
+                    <div class="stat-label">In Progress</div>
+                    <div class="stat-val" id="count-inprogress">0</div>
+                </div>
+                <div class="stat-card" data-filter="pending_approval" style="border-left-color: #8b5cf6;">
+                    <div class="stat-label">Pending Approval</div>
+                    <div class="stat-val" id="count-approval">0</div>
+                </div>
+                <div class="stat-card" data-filter="pending_billing" style="border-left-color: #ec4899;">
+                    <div class="stat-label">Pending Billing</div>
+                    <div class="stat-val" id="count-billing">0</div>
+                </div>
+                <div class="stat-card" data-filter="closed_today" style="border-left-color: #10b981;">
+                    <div class="stat-label">Closed Today</div>
+                    <div class="stat-val" id="count-closed-today">0</div>
+                </div>
+                <div class="stat-card" style="border-left-color: #059669; cursor: default;">
+                    <div class="stat-label">Revenue Today</div>
+                    <div class="stat-val" id="sum-revenue">₹0</div>
+                </div>
+            </div>
+
             <div
                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; flex-wrap: wrap; gap: 20px;">
                 <h2 style="font-size:1.5rem; margin:0;">Internal Service Workflow</h2>
@@ -245,6 +345,30 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <div style="height: 40px;"></div>
+
+            <!-- Engineer Status Board Section -->
+            <div class="card" style="padding:30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-radius:12px; background:#fff;">
+                <div class="card-title" style="margin-bottom: 20px; font-size:1.3rem; font-weight:700; color:var(--primary-dark);">Engineer Status Board</div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Status</th>
+                                <th>Current Ticket</th>
+                                <th>Last Activity</th>
+                            </tr>
+                        </thead>
+                        <tbody id="engineerStatusTableBody">
+                            <tr>
+                                <td colspan="4" class="text-center" style="padding:20px; color:#6c757d;">Loading status board...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -465,21 +589,92 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
             </div>
         </div>
 
+        <!-- 6. ACTIVITY LOG TAB (SUPER ADMIN ONLY) -->
+        <?php if (isSuperAdmin()): ?>
+        <div id="activity-log-tab" class="tab-pane">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="font-size:1.5rem; margin:0;">Accountability Log &amp; Audit Trail</h2>
+                <button class="btn btn-secondary" onclick="loadActivityLog()" style="padding: 5px 15px; font-size: 0.85rem;">Refresh</button>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Performed By</th>
+                            <th>Event / Status</th>
+                            <th>Service ID</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activityLogTableBody">
+                        <tr>
+                            <td colspan="5" class="text-center" style="padding:40px; color:#6c757d;">Loading audit trail...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <?php endif; ?>
+
     </div>
 
     <script src="assets/js/image-processor.js?v=2.0"></script>
     <script src="assets/js/main.js"></script>
     <script>
         const IS_ADMIN = <?php echo json_encode(in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])); ?>;
+        let currentFilter = '';
+
         document.addEventListener('DOMContentLoaded', () => {
+            fetchDashboardStats();
             loadRecentServices();
             loadUserRequests();
             loadHomeServices();
+            loadEngineerStatus();
+            if (document.getElementById('activityLogTableBody')) {
+                loadActivityLog();
+            }
+
+            // Wire up card filter clicks
+            document.querySelectorAll('.stat-card').forEach(card => {
+                const filterType = card.getAttribute('data-filter');
+                if (filterType) {
+                    card.addEventListener('click', () => {
+                        const isAlreadyActive = card.classList.contains('active-filter');
+                        document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
+                        if (isAlreadyActive) {
+                            currentFilter = '';
+                        } else {
+                            card.classList.add('active-filter');
+                            currentFilter = filterType;
+                        }
+                        loadRecentServices();
+                    });
+                }
+            });
 
             // Init Multi-Image Processor
             window.lastProcessedBlobs = [];
-            ImageProcessor.setupMultiPreview('.img-add-btn', '#imagePreview', false);
-            ImageProcessor.initCameraVisibility('.camera-btn');
+            if (typeof ImageProcessor !== 'undefined') {
+                ImageProcessor.setupMultiPreview('.img-add-btn', '#imagePreview', false);
+                ImageProcessor.initCameraVisibility('.camera-btn');
+            }
+
+            // Setup Auto-refresh (60 seconds)
+            setInterval(() => {
+                fetchDashboardStats();
+                loadRecentServices();
+                loadUserRequests();
+                loadHomeServices();
+                loadEngineerStatus();
+            }, 60000);
+
+            // Setup Audit Log Auto-refresh (120 seconds)
+            if (document.getElementById('activityLogTableBody')) {
+                setInterval(() => {
+                    loadActivityLog();
+                }, 120000);
+            }
         });
 
         function switchTab(id) {
@@ -519,12 +714,13 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
             if (id === 'main-workflow') loadRecentServices();
             if (id === 'user-requests') loadUserRequests();
             if (id === 'home-services') loadHomeServices();
+            if (id === 'activity-log-tab') loadActivityLog();
         }
 
         // ====== MAIN WORKFLOW ======
         async function loadRecentServices() {
             try {
-                const res = await fetch('api/list_services.php');
+                const res = await fetch(`api/list_services.php?filter=${encodeURIComponent(currentFilter)}`);
                 const json = await res.json();
                 renderTable(json.data || []);
             } catch (e) {
@@ -552,12 +748,13 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
             }
             services.forEach(svc => {
                 const tr = document.createElement('tr');
+                const warningHtml = svc.stuck_warning ? `<br><span class="warning-badge">${svc.stuck_warning}</span>` : '';
                 tr.innerHTML = `
                     <td><strong style="color:var(--primary-dark); font-size:1.05rem;">${svc.service_id}</strong></td>
                     <td>${formatDate(svc.created_at || svc.date_received)}</td>
                     <td><div style="font-weight:600;">${svc.name}</div><div class="text-muted" style="font-size:0.9rem;">${svc.phone}</div></td>
                     <td><div style="font-weight:600;">${svc.device_name}</div><div class="text-muted" style="font-size:0.9rem;">${svc.service_type}</div></td>
-                    <td><span class="${getStatusBadgeClass(svc.status)}">${svc.status}</span><br><small style="color:#666;">${svc.assigned_engineer ? '🔧 ' + svc.assigned_engineer : '<i>Unassigned</i>'}</small></td>
+                    <td><span class="${getStatusBadgeClass(svc.status)}">${svc.status}</span><br><small style="color:#666;">${svc.assigned_engineer ? '🔧 ' + svc.assigned_engineer : '<i>Unassigned</i>'}</small>${warningHtml}</td>
                     <td><button onclick="viewDetails('${svc.service_id}')" class="btn btn-primary" style="padding: 5px 15px; font-size: 0.85rem;">Manage</button></td>
                 `;
                 tbody.appendChild(tr);
@@ -871,6 +1068,122 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
                 await fetch('api/delete_home_service.php', { method: 'POST', body: fd });
                 loadHomeServices();
             } catch (e) { }
+        }
+
+        async function fetchDashboardStats() {
+            try {
+                const res = await fetch('api/dashboard_stats.php');
+                const json = await res.json();
+                if (json.status === 'success') {
+                    const stats = json.data;
+                    document.getElementById('count-new-calls').innerText = stats.new_calls;
+                    document.getElementById('count-assigned').innerText = stats.assigned;
+                    document.getElementById('count-inprogress').innerText = stats.inprogress;
+                    document.getElementById('count-approval').innerText = stats.pending_approval;
+                    document.getElementById('count-billing').innerText = stats.pending_billing;
+                    document.getElementById('count-closed-today').innerText = stats.closed_today;
+                    document.getElementById('sum-revenue').innerText = '₹' + stats.revenue_today.toLocaleString('en-IN');
+                }
+            } catch (e) {
+                console.error("Error fetching stats:", e);
+            }
+        }
+
+        async function loadEngineerStatus() {
+            try {
+                const res = await fetch('api/get_engineers_status.php');
+                const json = await res.json();
+                const tbody = document.getElementById('engineerStatusTableBody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                if (!json.data || json.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">No engineer statuses available.</td></tr>';
+                    return;
+                }
+                
+                json.data.forEach(eng => {
+                    const tr = document.createElement('tr');
+                    
+                    let statusHtml = '';
+                    if (IS_ADMIN) {
+                        statusHtml = `<select class="status-select" onchange="updateEngineerStatus('${eng.name}', this.value)">
+                            <option value="Active" ${eng.status === 'Active' ? 'selected' : ''}>Active</option>
+                            <option value="On Call" ${eng.status === 'On Call' ? 'selected' : ''}>On Call</option>
+                            <option value="In Transit" ${eng.status === 'In Transit' ? 'selected' : ''}>In Transit</option>
+                            <option value="On Job" ${eng.status === 'On Job' ? 'selected' : ''}>On Job</option>
+                            <option value="On Hold" ${eng.status === 'On Hold' ? 'selected' : ''}>On Hold</option>
+                            <option value="Off Duty" ${eng.status === 'Off Duty' ? 'selected' : ''}>Off Duty</option>
+                        </select>`;
+                    } else {
+                        statusHtml = `<span class="${getStatusBadgeClass(eng.status)}">${eng.status}</span>`;
+                    }
+
+                    tr.innerHTML = `
+                        <td><strong>${eng.name}</strong></td>
+                        <td>${statusHtml}</td>
+                        <td>${eng.current_ticket ? `<strong style="color:var(--primary-dark);">${eng.current_ticket}</strong>` : '<i style="color:#94a3b8;">None</i>'}</td>
+                        <td>${formatDate(eng.last_activity_at)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error("Error loading engineer status board:", e);
+            }
+        }
+
+        async function updateEngineerStatus(name, newStatus) {
+            try {
+                const res = await fetch('api/update_engineer_status.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name, status: newStatus })
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    loadEngineerStatus();
+                } else {
+                    alert('Error: ' + json.message);
+                }
+            } catch (e) {
+                alert('Network error updating status.');
+            }
+        }
+
+        async function loadActivityLog() {
+            const tbody = document.getElementById('activityLogTableBody');
+            if (!tbody) return;
+            try {
+                const res = await fetch('api/get_activity_log.php');
+                const json = await res.json();
+                tbody.innerHTML = '';
+                if (!json.data || json.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">No activity log entries found.</td></tr>';
+                    return;
+                }
+                json.data.forEach(log => {
+                    const tr = document.createElement('tr');
+                    
+                    let detailsStr = '';
+                    if (typeof log.event_data === 'object' && log.event_data !== null) {
+                        detailsStr = Object.entries(log.event_data)
+                            .map(([k, v]) => `<strong>${k}:</strong> ${typeof v === 'object' ? JSON.stringify(v) : v}`)
+                            .join(' | ');
+                    } else {
+                        detailsStr = log.event_data || '';
+                    }
+
+                    tr.innerHTML = `
+                        <td style="font-family:monospace; font-size:0.85rem; white-space:nowrap;">${formatDate(log.created_at)}</td>
+                        <td><strong>${log.performed_by}</strong></td>
+                        <td><span style="font-weight:600; text-transform:uppercase; font-size:0.8rem; background:#f1f5f9; padding:2px 6px; border-radius:4px;">${log.event_type}</span></td>
+                        <td><strong style="color:var(--primary-dark);">${log.service_id}</strong></td>
+                        <td style="font-size:0.9rem; color:#475569;">${detailsStr}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Failed to load activity logs.</td></tr>';
+            }
         }
     </script>
 </body>

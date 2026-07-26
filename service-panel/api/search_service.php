@@ -15,14 +15,25 @@ try {
     $results = [];
 
     // 1. Search Active/Engineering Services
-    $stmt = $conn->prepare("
-        SELECT s.*, c.name, c.phone, 'engineering' as source_type
-        FROM services s 
-        JOIN customers c ON s.customer_id = c.id 
-        WHERE s.service_id = ? OR c.phone = ? OR c.name = ?
-        ORDER BY s.created_at DESC
-    ");
-    $stmt->bind_param("sss", $query, $query, $query);
+    if (isEngineer()) {
+        $stmt = $conn->prepare("
+            SELECT s.*, c.name, c.phone, 'engineering' as source_type
+            FROM services s 
+            JOIN customers c ON s.customer_id = c.id 
+            WHERE (s.service_id = ? OR c.phone = ? OR c.name = ?) AND s.assigned_engineer = ?
+            ORDER BY s.created_at DESC
+        ");
+        $stmt->bind_param("ssss", $query, $query, $query, getStaffName());
+    } else {
+        $stmt = $conn->prepare("
+            SELECT s.*, c.name, c.phone, 'engineering' as source_type
+            FROM services s 
+            JOIN customers c ON s.customer_id = c.id 
+            WHERE s.service_id = ? OR c.phone = ? OR c.name = ?
+            ORDER BY s.created_at DESC
+        ");
+        $stmt->bind_param("sss", $query, $query, $query);
+    }
     $stmt->execute();
     $res = $stmt->get_result();
     
@@ -51,17 +62,37 @@ try {
         if (empty($row['images']) && !empty($row['image_path'])) {
             $row['images'][] = $row['image_path'];
         }
+        // Stuck warnings
+        $now_ts = time();
+        $row['stuck_warning'] = '';
+        $updated_ts = !empty($row['updated_at']) ? strtotime($row['updated_at']) : (!empty($row['created_at']) ? strtotime($row['created_at']) : $now_ts);
+        $diff_sec = $now_ts - $updated_ts;
+        if ($row['status'] === 'Assigned' && $diff_sec > 2 * 3600) {
+            $row['stuck_warning'] = 'No Engineer Response (>2h)';
+        } elseif ($row['status'] === 'Engineer Submitted' && $diff_sec > 4 * 3600) {
+            $row['stuck_warning'] = 'Pending Admin Verification (>4h)';
+        }
         $results[] = $row;
     }
 
     // 2. Search User Service Requests (Web Requests)
-    $stmt2 = $conn->prepare("
-        SELECT *, 'web_request' as source_type 
-        FROM user_service_requests 
-        WHERE service_id = ? OR phone = ? OR name = ? 
-        ORDER BY created_at DESC
-    ");
-    $stmt2->bind_param("sss", $query, $query, $query);
+    if (isEngineer()) {
+        $stmt2 = $conn->prepare("
+            SELECT *, 'web_request' as source_type 
+            FROM user_service_requests 
+            WHERE (service_id = ? OR phone = ? OR name = ?) AND assigned_engineer = ?
+            ORDER BY created_at DESC
+        ");
+        $stmt2->bind_param("ssss", $query, $query, $query, getStaffName());
+    } else {
+        $stmt2 = $conn->prepare("
+            SELECT *, 'web_request' as source_type 
+            FROM user_service_requests 
+            WHERE service_id = ? OR phone = ? OR name = ? 
+            ORDER BY created_at DESC
+        ");
+        $stmt2->bind_param("sss", $query, $query, $query);
+    }
     $stmt2->execute();
     $res2 = $stmt2->get_result();
     while($row = $res2->fetch_assoc()) {
@@ -84,17 +115,20 @@ try {
     }
 
     // 3. Search Home Service Requests
-    $stmt3 = $conn->prepare("
-        SELECT *, 'home' as source_type 
-        FROM home_service_requests 
-        WHERE service_id = ? OR phone = ? OR name = ? 
-        ORDER BY created_at DESC
-    ");
-    $stmt3->bind_param("sss", $query, $query, $query);
-    $stmt3->execute();
-    $res3 = $stmt3->get_result();
-    while($row = $res3->fetch_assoc()) {
-        $results[] = $row;
+    if (!isEngineer()) {
+        $stmt3 = $conn->prepare("
+            SELECT *, 'home' as source_type 
+            FROM home_service_requests 
+            WHERE service_id = ? OR phone = ? OR name = ? 
+            ORDER BY created_at DESC
+        ");
+        $stmt3->bind_param("sss", $query, $query, $query);
+        $stmt3->execute();
+        $res3 = $stmt3->get_result();
+        while($row = $res3->fetch_assoc()) {
+            $results[] = $row;
+        }
+        $stmt3->close();
     }
 
     if(count($results) > 0) {

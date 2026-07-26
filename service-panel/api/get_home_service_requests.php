@@ -19,12 +19,15 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
-    $stmt = $conn->prepare("SELECT * FROM home_service_requests ORDER BY created_at DESC");
-    $stmt->execute();
-    $res = $stmt->get_result();
     $data = [];
-    while($row = $res->fetch_assoc()) {
-        $data[] = $row;
+    if (!isEngineer()) {
+        $stmt = $conn->prepare("SELECT * FROM home_service_requests ORDER BY created_at DESC");
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while($row = $res->fetch_assoc()) {
+            $data[] = $row;
+        }
+        $stmt->close();
     }
     echo json_encode(['status' => 'success', 'data' => $data]);
 } catch(Exception $e) {

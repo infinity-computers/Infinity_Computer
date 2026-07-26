@@ -74,10 +74,11 @@ if (!in_array($_SESSION['staff_email'] ?? '', $allowed_crm_emails)) {
             </a>
             <ul class="nav-links">
                 <li><a href="index.php">Track Service</a></li>
-                <li><a href="javascript:void(0)" id="headerNewService" onclick="switchTab('new-service-tab')">Add New Service</a></li>
                 <li><a href="dashboard.php">Dashboard</a></li>
                 <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
-                <li><a href="javascript:void(0)" id="headerCrm" onclick="switchTab('crm-analytics-tab')" class="header-active">CRM Analytics</a></li>
+                <li><a href="crm.php" class="header-active">CRM Analytics</a></li>
+                <li><a href="billing.php">Billing</a></li>
+                <li><a href="reports.php">Reports</a></li>
                 <?php endif; ?>
                 <li><a href="task_management.php">Task Management</a></li>
                 <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
@@ -106,6 +107,49 @@ if (!in_array($_SESSION['staff_email'] ?? '', $allowed_crm_emails)) {
                 </select>
                 <button class="btn-export" style="background:#6366f1" onclick="window.print()">🖨 Print Report</button>
                 <button class="btn-export" id="exportBtn">⬇ Export CSV</button>
+            </div>
+        </div>
+
+        <!-- Customer Lookup & History Section -->
+        <div class="card mb-4" style="background:#fff; padding:30px; border-radius:12px; box-shadow:var(--shadow); margin-bottom:30px; border: 1px solid var(--border-color);">
+            <h3 style="margin-bottom:15px; font-size:1.2rem; color:var(--primary-dark); font-weight:700; display:flex; align-items:center; gap:8px;">🔍 Customer History Search</h3>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:15px;">
+                <input type="text" id="customerSearchInput" class="form-control" placeholder="Search customer by name or phone..." style="flex:1; min-width:250px;" onkeypress="if(event.key === 'Enter') searchCRMCustomer()">
+                <button class="btn btn-primary" onclick="searchCRMCustomer()" style="padding:12px 25px;">Search</button>
+            </div>
+            <div id="customerSearchResults" class="hidden" style="background:#f8f9fa; border:1px solid #e2e8f0; border-radius:8px; max-height:200px; overflow-y:auto; padding:10px; margin-bottom:15px;"></div>
+            
+            <div id="crmCustomerProfile" class="hidden" style="border-top: 1px solid #e2e8f0; padding-top:20px; margin-top:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:15px; margin-bottom:20px;">
+                    <div>
+                        <h4 id="crmProfileName" style="font-size:1.4rem; font-weight:700; color:var(--text-dark); margin:0;"></h4>
+                        <div id="crmProfileContact" style="font-size:0.9rem; color:#64748b; margin-top:4px;"></div>
+                    </div>
+                    <div style="background:#ecfdf5; border:1px solid #a7f3d0; padding:10px 15px; border-radius:8px; text-align:right;">
+                        <div style="font-size:0.75rem; color:#047857; font-weight:700; text-transform:uppercase;">Total Spent</div>
+                        <div id="crmProfileTotalSpent" style="font-size:1.5rem; font-weight:800; color:#065f46;">₹0</div>
+                    </div>
+                </div>
+
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:20px; display:grid;">
+                    <!-- Left Column: Device History & Call Logs -->
+                    <div style="display:flex; flex-direction:column; gap:20px;">
+                        <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:20px;">
+                            <h5 style="margin:0 0 12px 0; font-size:1rem; font-weight:700; color:var(--primary-dark);">📱 Serviced Devices</h5>
+                            <ul id="crmProfileDevices" style="margin:0; padding-left:20px; color:#475569; font-size:0.9rem; line-height:1.6;"></ul>
+                        </div>
+                        <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:20px;">
+                            <h5 style="margin:0 0 12px 0; font-size:1rem; font-weight:700; color:var(--primary-dark);">📞 Call Log History</h5>
+                            <div id="crmProfileCalls" style="max-height:220px; overflow-y:auto; font-size:0.85rem; display:flex; flex-direction:column; gap:8px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Tickets History -->
+                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:20px;">
+                        <h5 style="margin:0 0 12px 0; font-size:1rem; font-weight:700; color:var(--primary-dark);">📋 Service Tickets History</h5>
+                        <div id="crmProfileTickets" style="max-height:350px; overflow-y:auto; display:flex; flex-direction:column; gap:10px;"></div>
+                    </div>
+                </div>
             </div>
         </div>
 

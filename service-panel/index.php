@@ -315,37 +315,119 @@ if ($engResult) {
         }
     </style>
 <style>
-/* Modal styles */
+/* Premium Modal Styles */
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.5);
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
     display: none;
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    padding: 20px;
+}
+.modal-overlay.active {
+    display: flex;
 }
 .modal {
     background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    max-width: 500px;
-    width: 90%;
+    padding: 30px;
+    border-radius: 16px;
+    max-width: 550px;
+    width: 100%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.modal.active {
-    display: flex;
+@keyframes modalSlideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 .modal-header {
-    font-size: 1.2rem;
-    margin-bottom: 10px;
-    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0;
 }
 .modal-close {
+    font-size: 1.5rem;
+    color: #94a3b8;
     cursor: pointer;
-    float: right;
-    font-size: 1.2rem;
-    line-height: 1;
-    margin-left: 10px;
+    border: none;
+    background: none;
+    transition: color 0.2s;
+}
+.modal-close:hover {
+    color: #64748b;
+}
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 15px;
+    margin-top: 20px;
+}
+.vertical-timeline {
+    position: relative;
+    padding-left: 30px;
+    margin: 15px 0;
+}
+.vertical-timeline::before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    bottom: 5px;
+    left: 9px;
+    width: 2px;
+    background: #e2e8f0;
+}
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+.timeline-dot {
+    position: absolute;
+    left: -26px;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #3b82f6;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+.timeline-date-str {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+.timeline-title-str {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+}
+.timeline-desc-str {
+    font-size: 0.85rem;
+    color: #475569;
 }
 </style>
 </head>
@@ -369,6 +451,8 @@ if ($engResult) {
                 <li><a href="dashboard.php">Dashboard</a></li>
                 <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
                 <li><a href="crm.php">CRM Analytics</a></li>
+                <li><a href="billing.php">Billing</a></li>
+                <li><a href="reports.php">Reports</a></li>
                 <?php endif; ?>
                 <li><a href="task_management.php">Task Management</a></li>
                 <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
@@ -518,6 +602,11 @@ if ($engResult) {
     <script src="assets/js/image-processor.js?v=2.0"></script>
     <script src="assets/js/main.js"></script>
     <script>
+        const STAFF_ROLE = <?php echo json_encode(getStaffRole()); ?>;
+        const STAFF_NAME = <?php echo json_encode(getStaffName()); ?>;
+        const IS_ADMIN = <?php echo json_encode(isAdmin()); ?>;
+        const IS_SUPER_ADMIN = <?php echo json_encode(isSuperAdmin()); ?>;
+
         document.addEventListener('DOMContentLoaded', () => {
             // Init Multi-Image Processor
             if (typeof ImageProcessor !== 'undefined') {
@@ -699,17 +788,561 @@ if ($engResult) {
                 if (imgs.length > 0) { html += `<div class="mt-4"><label style="font-weight:600; color:var(--muted); font-size:0.85rem; text-transform:uppercase;">Device Image${imgs.length > 1 ? 's' : ''}</label><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">${imgs.map(p => `<img src="../${p}" class="device-image-preview" style="height:200px; width:auto; max-width:100%; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); object-fit:cover; cursor:pointer;" onclick="window.open('../${p}','_blank')" alt="Device">`).join('')}</div></div>`; }
                 if (svc.logs && svc.logs.length > 0) { html += `<div style="margin-top: 30px; padding-top: 10px;"><h4 style="margin-bottom:0; color:var(--muted); font-size:0.9rem; text-transform:uppercase;">Detailed Activity Log</h4><ul class="timeline">`; svc.logs.forEach(log => { html += `<li><div class="timeline-bullet"></div><div class="timeline-content"><div class="timeline-meta"><h5 class="timeline-title">${log.status}</h5><span class="timeline-date">${formatDate(log.updated_at)}</span></div>${log.remarks ? `<p class="timeline-text">${log.remarks}</p>` : ''}</div></li>`; }); html += `</ul></div>`; }
                 if (isMulti) html += `</div>`;
-                wrap.innerHTML = html + `
-                <div class="action-buttons" style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
-                    <button class="btn btn-sm btn-primary" onclick="openLogCallModal('${svc.service_id}')">Log Call</button>
-                    <button class="btn btn-sm btn-secondary" onclick="openCustodyTransferModal('${svc.service_id}')">Custody Transfer</button>
-                    <button class="btn btn-sm btn-info" onclick="openReplacedPartModal('${svc.service_id}')">Record Part Replaced</button>
-                    <button class="btn btn-sm btn-success" onclick="openSubmitWorkModal('${svc.service_id}')">Submit Work</button>
-                    <button class="btn btn-sm btn-warning" onclick="openAdminVerifyModal('${svc.service_id}')">Admin Verify</button>
-                    <button class="btn btn-sm btn-danger" onclick="openCloseTicketModal('${svc.service_id}')">Close Ticket</button>
-                </div>`;
+                let btnHtml = '';
+                if (source !== 'home') {
+                    // 1. Log Call, Custody, Parts: visible to Admin, Super Admin, and Assigned Engineer
+                    if (IS_ADMIN || svc.assigned_engineer === STAFF_NAME) {
+                        btnHtml += `<button class="btn btn-sm btn-primary" onclick="openLogCallModal('${svc.service_id}')">Log Call</button>`;
+                        btnHtml += `<button class="btn btn-sm btn-secondary" onclick="openCustodyTransferModal('${svc.service_id}')">Custody Transfer</button>`;
+                        btnHtml += `<button class="btn btn-sm btn-info" onclick="openReplacedPartModal('${svc.service_id}')">Record Part Replaced</button>`;
+                    }
+                    
+                    // 2. Submit Work: visible to Assigned Engineer only, when work is not closed/submitted
+                    if (STAFF_ROLE === 'Engineer' && svc.assigned_engineer === STAFF_NAME && svc.status !== 'Closed' && svc.engineer_submitted != 1) {
+                        btnHtml += `<button class="btn btn-sm btn-success" onclick="openSubmitWorkModal('${svc.service_id}')">Submit Work</button>`;
+                    }
+                    
+                    // 3. Admin Verify: visible to Admin/Super Admin only, when engineer_submitted = 1 and not verified
+                    if (IS_ADMIN && svc.engineer_submitted == 1 && !svc.verified_by_admin) {
+                        btnHtml += `<button class="btn btn-sm btn-warning" onclick="openAdminVerifyModal('${svc.service_id}')">Admin Verify</button>`;
+                    }
+                    
+                    // 4. Close Ticket: visible to Admin/Super Admin only, when verified_by_admin IS NOT NULL and not closed
+                    if (IS_ADMIN && svc.verified_by_admin && svc.status !== 'Closed') {
+                        btnHtml += `<button class="btn btn-sm btn-danger" onclick="openCloseTicketModal('${svc.service_id}')">Close Ticket</button>`;
+                    }
+                }
+                
+                // 5. View Timeline: visible to everyone
+                btnHtml += `<button class="btn btn-sm btn-info" style="background:#0284c7; border-color:#0284c7; color:#fff;" onclick="openTimelineModal('${svc.service_id}')">View Timeline</button>`;
+
+                wrap.innerHTML = html + `<div class="action-buttons" style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">${btnHtml}</div>`;
+                if (isMulti) wrap.innerHTML += `</div>`;
                 container.appendChild(wrap);
             });
+        }
+    </script>
+
+    <!-- Modals Section -->
+    <!-- 1. Log Call Modal -->
+    <div id="modal-log-call" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Log Call Attempt</h3>
+                <button class="modal-close" onclick="closeModal('modal-log-call')">&times;</button>
+            </div>
+            <form id="form-log-call" onsubmit="submitLogCall(event)">
+                <input type="hidden" name="service_id" id="log-call-svc-id">
+                <div class="form-group">
+                    <label>Call Status <span style="color:var(--danger)">*</span></label>
+                    <select name="call_status" class="form-control" required>
+                        <option value="">Select Call Status...</option>
+                        <option value="Answered">Answered</option>
+                        <option value="No Answer">No Answer</option>
+                        <option value="Busy">Busy</option>
+                        <option value="Switched Off">Switched Off</option>
+                        <option value="Customer Requested Callback">Customer Requested Callback</option>
+                        <option value="Customer Will Visit Office">Customer Will Visit Office</option>
+                    </select>
+                </div>
+                <div class="form-group mt-3">
+                    <label>Notes</label>
+                    <textarea name="notes" class="form-control" rows="3" placeholder="Enter notes here..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-log-call')" style="background:#6c757d; color:#fff;">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Log</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. Custody Transfer Modal -->
+    <div id="modal-custody-transfer" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Record Custody Transfer</h3>
+                <button class="modal-close" onclick="closeModal('modal-custody-transfer')">&times;</button>
+            </div>
+            <form id="form-custody-transfer" onsubmit="submitCustodyTransfer(event)">
+                <input type="hidden" name="service_id" id="custody-svc-id">
+                <div class="form-group">
+                    <label>Transfer Type <span style="color:var(--danger)">*</span></label>
+                    <select name="transfer_type" class="form-control" required>
+                        <option value="">Select Transfer Type...</option>
+                        <option value="Customer -> Engineer">Customer -> Engineer</option>
+                        <option value="Engineer -> Workshop">Engineer -> Workshop</option>
+                        <option value="Workshop -> Engineer">Workshop -> Engineer</option>
+                        <option value="Engineer -> Customer">Engineer -> Customer</option>
+                    </select>
+                </div>
+                <div class="form-group mt-3">
+                    <label>From User</label>
+                    <input type="text" name="from_user" class="form-control" id="custody-from-user" readonly>
+                </div>
+                <div class="form-group mt-3">
+                    <label>To User / Recipient <span style="color:var(--danger)">*</span></label>
+                    <input type="text" name="to_user" class="form-control" placeholder="Recipient's Name (e.g. Workshop, Engineer, or Customer)" required>
+                </div>
+                <div class="form-group mt-3">
+                    <label>Device Condition</label>
+                    <textarea name="device_condition" class="form-control" rows="2" placeholder="Describe condition..."></textarea>
+                </div>
+                <div class="form-group mt-3">
+                    <label>Remarks</label>
+                    <textarea name="remarks" class="form-control" rows="2" placeholder="Transfer notes..."></textarea>
+                </div>
+                <div class="form-group mt-3">
+                    <label>Upload Condition Photo <small>(Optional)</small></label>
+                    <input type="file" name="image" class="form-control" accept="image/*">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-custody-transfer')" style="background:#6c757d; color:#fff;">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Record Transfer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. Record Part Replaced Modal -->
+    <div id="modal-replaced-part" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Record Part Replaced</h3>
+                <button class="modal-close" onclick="closeModal('modal-replaced-part')">&times;</button>
+            </div>
+            <form id="form-replaced-part" onsubmit="submitReplacedPart(event)">
+                <input type="hidden" name="service_id" id="parts-svc-id">
+                <div class="form-group">
+                    <label>New Part Name <span style="color:var(--danger)">*</span></label>
+                    <input type="text" name="new_part_name" class="form-control" placeholder="e.g. Crucial 8GB DDR4 RAM" required>
+                </div>
+                <div class="form-grid mt-3">
+                    <div class="form-group">
+                        <label>Old Part Name</label>
+                        <input type="text" name="old_part_name" class="form-control" placeholder="e.g. Defective RAM">
+                    </div>
+                    <div class="form-group">
+                        <label>Quantity</label>
+                        <input type="number" name="quantity" class="form-control" value="1" min="1">
+                    </div>
+                </div>
+                <div class="form-grid mt-3">
+                    <div class="form-group">
+                        <label>New Part Serial</label>
+                        <input type="text" name="new_part_serial" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>Old Part Serial</label>
+                        <input type="text" name="old_part_serial" class="form-control">
+                    </div>
+                </div>
+                <div class="form-grid mt-3">
+                    <div class="form-group">
+                        <label>Cost Price (₹)</label>
+                        <input type="number" name="cost_price" class="form-control" step="0.01" value="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Selling Price (₹)</label>
+                        <input type="number" name="selling_price" class="form-control" step="0.01" value="0.00">
+                    </div>
+                </div>
+                <div class="form-group mt-3">
+                    <label>Warranty Period</label>
+                    <input type="text" name="warranty_period" class="form-control" placeholder="e.g. 3 Years Warranty">
+                </div>
+                <div class="form-group mt-3">
+                    <label>Upload Part Photo <small>(Optional)</small></label>
+                    <input type="file" name="image" class="form-control" accept="image/*">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-replaced-part')" style="background:#6c757d; color:#fff;">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Part</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. Submit Work Modal -->
+    <div id="modal-submit-work" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Submit Work Details</h3>
+                <button class="modal-close" onclick="closeModal('modal-submit-work')">&times;</button>
+            </div>
+            <form id="form-submit-work" onsubmit="submitWork(event)">
+                <input type="hidden" name="service_id" id="submit-work-svc-id">
+                <div class="form-group">
+                    <label>Work Done Summary <span style="color:var(--danger)">*</span></label>
+                    <textarea name="remarks" class="form-control" rows="4" placeholder="Describe resolution..." required></textarea>
+                </div>
+                <div class="form-group mt-3">
+                    <label>Upload Photo Proofs <span style="color:var(--danger)">*</span> <small>(Up to 5 images)</small></label>
+                    <input type="file" name="images[]" class="form-control" accept="image/*" multiple required>
+                </div>
+                <div class="form-group mt-3">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" required style="width: 18px; height: 18px; accent-color: var(--primary-color);">
+                        <span>I confirm work is complete</span>
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-submit-work')" style="background:#6c757d; color:#fff;">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Work</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 5. Admin Verify Modal -->
+    <div id="modal-admin-verify" class="modal-overlay">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Admin Verification &amp; Approval</h3>
+                <button class="modal-close" onclick="closeModal('modal-admin-verify')">&times;</button>
+            </div>
+            <form id="form-admin-verify" onsubmit="submitAdminVerify(event)">
+                <input type="hidden" name="service_id" id="verify-svc-id">
+                <div class="form-group">
+                    <label>Verification Action <span style="color:var(--danger)">*</span></label>
+                    <select name="action" class="form-control" id="verify-action" required onchange="toggleVerifyFields(this.value)">
+                        <option value="Approve">Approve &amp; Ready for Pickup</option>
+                        <option value="Return">Return to Engineer for Revisions</option>
+                        <option value="Close">Verify, Mark Paid &amp; Close Ticket</option>
+                    </select>
+                </div>
+                <div id="verify-billing-fields">
+                    <div class="form-grid mt-3">
+                        <div class="form-group">
+                            <label>Billing Status</label>
+                            <select name="billing_status" class="form-control">
+                                <option value="Billing Pending">Billing Pending</option>
+                                <option value="Invoice Generated">Invoice Generated</option>
+                                <option value="Payment Pending">Payment Pending</option>
+                                <option value="Payment Received" selected>Payment Received</option>
+                                <option value="Cash Collected">Cash Collected</option>
+                                <option value="Credit Customer">Credit Customer</option>
+                                <option value="AMC">AMC</option>
+                                <option value="Warranty">Warranty</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Payment Mode</label>
+                            <select name="payment_mode" class="form-control">
+                                <option value="UPI">UPI</option>
+                                <option value="Cash">Cash</option>
+                                <option value="Card">Card</option>
+                                <option value="Credit">Credit</option>
+                                <option value="Cheque">Cheque</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label>Invoice Number</label>
+                        <input type="text" name="invoice_number" class="form-control">
+                    </div>
+                    <div class="form-grid mt-3">
+                        <div class="form-group">
+                            <label>Service Value (₹)</label>
+                            <input type="number" name="service_value_rupees" class="form-control" step="0.01" value="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Sales Value (₹)</label>
+                            <input type="number" name="sales_value_rupees" class="form-control" step="0.01" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group mt-3">
+                    <label id="verify-notes-label">Admin Notes / Remarks</label>
+                    <textarea name="remarks" class="form-control" rows="3" placeholder="Enter remarks..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-admin-verify')" style="background:#6c757d; color:#fff;">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Process Action</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 6. Close Ticket Modal -->
+    <div id="modal-close-ticket" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Close Service Ticket</h3>
+                <button class="modal-close" onclick="closeModal('modal-close-ticket')">&times;</button>
+            </div>
+            <form id="form-close-ticket" onsubmit="submitCloseTicket(event)">
+                <input type="hidden" name="service_id" id="close-svc-id">
+                <p>Are you sure you want to close this service ticket? This will mark the ticket as closed and return the assigned engineer to Active status.</p>
+                <div class="form-group mt-3">
+                    <label>Closing Remarks / Notes</label>
+                    <textarea name="remarks" class="form-control" rows="3" placeholder="Closing remarks..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-close-ticket')" style="background:#6c757d; color:#fff;">Cancel</button>
+                    <button type="submit" class="btn btn-danger" style="background:#dc2626; border-color:#dc2626; color:#fff;">Close Ticket</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 7. View Timeline Modal -->
+    <div id="modal-view-timeline" class="modal-overlay">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="timeline-title-display">Ticket Timeline</h3>
+                <button class="modal-close" onclick="closeModal('modal-view-timeline')">&times;</button>
+            </div>
+            <div id="timeline-content-area" style="max-height: 60vh; overflow-y: auto;">
+                <!-- Timeline items will load here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-view-timeline')" style="background:#6c757d; color:#fff;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals Script Logic -->
+    <script>
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function openLogCallModal(serviceId) {
+            document.getElementById('log-call-svc-id').value = serviceId;
+            document.getElementById('modal-log-call').classList.add('active');
+        }
+
+        async function submitLogCall(e) {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                service_id: form.elements['service_id'].value,
+                call_status: form.elements['call_status'].value,
+                notes: form.elements['notes'].value
+            };
+            try {
+                const res = await fetch('api/log_call_attempt.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    alert(json.message);
+                    closeModal('modal-log-call');
+                    form.reset();
+                    searchService();
+                } else {
+                    alert('Error: ' + json.message);
+                }
+            } catch (err) {
+                alert('Request failed');
+            }
+        }
+
+        function openCustodyTransferModal(serviceId) {
+            document.getElementById('custody-svc-id').value = serviceId;
+            document.getElementById('custody-from-user').value = STAFF_NAME;
+            document.getElementById('modal-custody-transfer').classList.add('active');
+        }
+
+        async function submitCustodyTransfer(e) {
+            e.preventDefault();
+            const form = e.target;
+            const fd = new FormData(form);
+            try {
+                const res = await fetch('api/record_custody_transfer.php', {
+                    method: 'POST',
+                    body: fd
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    alert(json.message);
+                    closeModal('modal-custody-transfer');
+                    form.reset();
+                    searchService();
+                } else {
+                    alert('Error: ' + json.message);
+                }
+            } catch (err) {
+                alert('Request failed');
+            }
+        }
+
+        function openReplacedPartModal(serviceId) {
+            document.getElementById('parts-svc-id').value = serviceId;
+            document.getElementById('modal-replaced-part').classList.add('active');
+        }
+
+        async function submitReplacedPart(e) {
+            e.preventDefault();
+            const form = e.target;
+            const fd = new FormData(form);
+            try {
+                const res = await fetch('api/record_replaced_part.php', {
+                    method: 'POST',
+                    body: fd
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    alert(json.message);
+                    closeModal('modal-replaced-part');
+                    form.reset();
+                    searchService();
+                } else {
+                    alert('Error: ' + json.message);
+                }
+            } catch (err) {
+                alert('Request failed');
+            }
+        }
+
+        function openSubmitWorkModal(serviceId) {
+            document.getElementById('submit-work-svc-id').value = serviceId;
+            document.getElementById('modal-submit-work').classList.add('active');
+        }
+
+        async function submitWork(e) {
+            e.preventDefault();
+            const form = e.target;
+            const fd = new FormData(form);
+            try {
+                const res = await fetch('api/engineer_submit_work.php', {
+                    method: 'POST',
+                    body: fd
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    alert(json.message);
+                    closeModal('modal-submit-work');
+                    form.reset();
+                    searchService();
+                } else {
+                    alert('Error: ' + json.message);
+                }
+            } catch (err) {
+                alert('Request failed');
+            }
+        }
+
+        function openAdminVerifyModal(serviceId) {
+            document.getElementById('verify-svc-id').value = serviceId;
+            document.getElementById('modal-admin-verify').classList.add('active');
+            toggleVerifyFields('Approve');
+        }
+
+        function toggleVerifyFields(action) {
+            const billingFields = document.getElementById('verify-billing-fields');
+            const notesLabel = document.getElementById('verify-notes-label');
+            if (action === 'Return') {
+                billingFields.style.display = 'none';
+                notesLabel.innerHTML = 'Return Reason / Notes <span style="color:var(--danger)">*</span>';
+                document.getElementById('form-admin-verify').querySelector('textarea').required = true;
+            } else {
+                billingFields.style.display = 'block';
+                notesLabel.innerHTML = 'Admin Notes / Remarks';
+                document.getElementById('form-admin-verify').querySelector('textarea').required = false;
+            }
+        }
+
+        async function submitAdminVerify(e) {
+            e.preventDefault();
+            const form = e.target;
+            const fd = new FormData(form);
+            try {
+                const res = await fetch('api/admin_verify_ticket.php', {
+                    method: 'POST',
+                    body: fd
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    alert(json.message);
+                    closeModal('modal-admin-verify');
+                    form.reset();
+                    searchService();
+                } else {
+                    alert('Error: ' + json.message);
+                }
+            } catch (err) {
+                alert('Request failed');
+            }
+        }
+
+        function openCloseTicketModal(serviceId) {
+            document.getElementById('close-svc-id').value = serviceId;
+            document.getElementById('modal-close-ticket').classList.add('active');
+        }
+
+        async function submitCloseTicket(e) {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                service_id: form.elements['service_id'].value,
+                remarks: form.elements['remarks'].value
+            };
+            try {
+                const res = await fetch('api/close_ticket.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    alert(json.message);
+                    closeModal('modal-close-ticket');
+                    form.reset();
+                    searchService();
+                } else {
+                    alert('Error: ' + json.message);
+                }
+            } catch (err) {
+                alert('Request failed');
+            }
+        }
+
+        async function openTimelineModal(serviceId) {
+            document.getElementById('timeline-title-display').innerText = `Timeline for ${serviceId}`;
+            const container = document.getElementById('timeline-content-area');
+            container.innerHTML = '<p class="text-center" style="padding:20px;">Fetching timeline events...</p>';
+            document.getElementById('modal-view-timeline').classList.add('active');
+            
+            try {
+                const res = await fetch(`api/get_ticket_timeline.php?id=${encodeURIComponent(serviceId)}`);
+                const json = await res.json();
+                if (json.status === 'success' && json.data.length > 0) {
+                    let html = '<div class="vertical-timeline">';
+                    json.data.forEach(item => {
+                        let detailHtml = '';
+                        if (typeof item.details === 'object' && item.details !== null) {
+                            detailHtml = Object.entries(item.details)
+                                .map(([k,v]) => `<strong>${k}:</strong> ${v}`)
+                                .join('<br>');
+                        } else {
+                            detailHtml = item.details || '';
+                        }
+                        if (item.extra) {
+                            if (item.extra.to_user) detailHtml += `<br><strong>Recipient:</strong> ${item.extra.to_user}`;
+                            if (item.extra.device_condition) detailHtml += `<br><strong>Condition:</strong> ${item.extra.device_condition}`;
+                            if (item.extra.photo_path) detailHtml += `<br><a href="../${item.extra.photo_path}" target="_blank" style="color:var(--primary); font-weight:600;">View Attached Photo</a>`;
+                        }
+                        html += `
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-date-str">${formatDate(item.created_at)} by <strong>${item.performed_by}</strong></div>
+                                <div class="timeline-title-str">${item.title} <small style="color:var(--primary); text-transform:uppercase; font-size:0.7rem; font-weight:700;">[${item.type}]</small></div>
+                                <div class="timeline-desc-str">${detailHtml}</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p class="text-center" style="padding:20px; color:#64748b;">No timeline records found for this ticket.</p>';
+                }
+            } catch (e) {
+                container.innerHTML = '<p class="text-center text-danger" style="padding:20px;">Failed to load timeline records.</p>';
+            }
         }
     </script>
 </body>

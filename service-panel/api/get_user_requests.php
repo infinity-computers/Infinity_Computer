@@ -29,7 +29,12 @@ try {
     }
     
     // Fetch pending and approved requests
-    $stmt = $conn->prepare("SELECT * FROM user_service_requests ORDER BY created_at DESC");
+    if (isEngineer()) {
+        $stmt = $conn->prepare("SELECT * FROM user_service_requests WHERE assigned_engineer = ? ORDER BY created_at DESC");
+        $stmt->bind_param("s", getStaffName());
+    } else {
+        $stmt = $conn->prepare("SELECT * FROM user_service_requests ORDER BY created_at DESC");
+    }
     $stmt->execute();
     $res = $stmt->get_result();
     $data = [];
