@@ -11,9 +11,10 @@ try {
 
     // Enforce role-based isolation: Engineers only see their own tickets
     if (isEngineer()) {
-        $conditions[] = "s.assigned_engineer = ?";
+        $conditions[] = "(LOWER(TRIM(s.assigned_engineer)) = LOWER(TRIM(?)) OR LOWER(TRIM(s.assigned_engineer)) = LOWER(TRIM(?)))";
         $params[] = getStaffName();
-        $types .= "s";
+        $params[] = $_SESSION['staff_email'] ?? '';
+        $types .= "ss";
     }
 
     // Apply dashboard stats filters if clicked

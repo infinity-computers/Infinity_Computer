@@ -20,10 +20,12 @@ try {
             SELECT s.*, c.name, c.phone, 'engineering' as source_type
             FROM services s 
             JOIN customers c ON s.customer_id = c.id 
-            WHERE (s.service_id = ? OR c.phone = ? OR c.name = ?) AND s.assigned_engineer = ?
+            WHERE (s.service_id = ? OR c.phone = ? OR c.name = ?) AND (LOWER(TRIM(s.assigned_engineer)) = LOWER(TRIM(?)) OR LOWER(TRIM(s.assigned_engineer)) = LOWER(TRIM(?)))
             ORDER BY s.created_at DESC
         ");
-        $stmt->bind_param("ssss", $query, $query, $query, getStaffName());
+        $staffName = getStaffName();
+        $staffEmail = $_SESSION['staff_email'] ?? '';
+        $stmt->bind_param("sssss", $query, $query, $query, $staffName, $staffEmail);
     } else {
         $stmt = $conn->prepare("
             SELECT s.*, c.name, c.phone, 'engineering' as source_type

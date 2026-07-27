@@ -86,9 +86,11 @@ try {
 
         // Permission check: only assigned engineer or admins can modify
         if (!$is_admin) {
-            // Must be the assigned engineer
-            if (($current_data['assigned_engineer'] ?? '') !== $session_email) {
-                echo json_encode(['status' => 'error', 'message' => 'You are not the assigned engineer for this service.']);
+            $assigned_eng = trim($current_data['assigned_engineer'] ?? '');
+            $staff_name = trim(getStaffName());
+            $staff_email = trim($_SESSION['staff_email'] ?? '');
+            if (empty($assigned_eng) || (strcasecmp($assigned_eng, $staff_name) !== 0 && strcasecmp($assigned_eng, $staff_email) !== 0)) {
+                echo json_encode(['status' => 'error', 'message' => 'You are not authorized to update this service. Only the assigned engineer or an admin can manage its status.']);
                 exit;
             }
         }

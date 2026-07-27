@@ -76,7 +76,9 @@ if (!function_exists('isEngineer')) {
 
 if (!function_exists('getStaffName')) {
     function getStaffName() {
-        if (!empty($_SESSION['staff_name'])) return $_SESSION['staff_name'];
+        if (!empty($_SESSION['staff_name']) && $_SESSION['staff_name'] !== 'Staff Member') {
+            return $_SESSION['staff_name'];
+        }
         $email = $_SESSION['staff_email'] ?? 'Staff';
         $parts = explode('@', $email);
         return ucfirst($parts[0]);

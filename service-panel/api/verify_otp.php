@@ -57,17 +57,20 @@ if ($enteredOtp === $_SESSION['otp_code']) {
     // Load DB connection safely
     $email = $_SESSION['otp_email'];
     $role  = 'Engineer';
-    $name  = 'Staff Member';
+    $emailPrefix = explode('@', $email)[0];
+    $name  = ucfirst($emailPrefix);
 
     try {
         require_once __DIR__ . '/../config/db.php';
-        $stmt = $conn->prepare("SELECT name, role FROM engineers WHERE LOWER(email) = LOWER(?)");
+        $stmt = $conn->prepare("SELECT name, role FROM engineers WHERE LOWER(email) = LOWER(?) OR LOWER(name) = LOWER(?)");
         if ($stmt) {
-            $stmt->bind_param('s', $email);
+            $stmt->bind_param('ss', $email, $emailPrefix);
             $stmt->execute();
             $res = $stmt->get_result();
             if ($row = $res->fetch_assoc()) {
-                $name = $row['name'];
+                if (!empty($row['name'])) {
+                    $name = $row['name'];
+                }
                 $role = $row['role'] ?: 'Engineer';
             }
             $stmt->close();

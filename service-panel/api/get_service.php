@@ -24,7 +24,10 @@ try {
     $svc = $res->fetch_assoc();
 
     if($svc) {
-        if (isEngineer() && $svc['assigned_engineer'] !== getStaffName()) {
+        $assigned = trim($svc['assigned_engineer'] ?? '');
+        $staff_name = trim(getStaffName());
+        $staff_email = trim($_SESSION['staff_email'] ?? '');
+        if (isEngineer() && !empty($assigned) && strcasecmp($assigned, $staff_name) !== 0 && strcasecmp($assigned, $staff_email) !== 0) {
             echo json_encode(['status' => 'error', 'message' => 'Access Denied: You are not assigned to this service ticket.']);
             exit;
         }

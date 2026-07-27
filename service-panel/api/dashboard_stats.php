@@ -8,12 +8,13 @@ header('Content-Type: application/json');
 $role = getStaffRole();
 $is_engineer = isEngineer();
 $staff_name = getStaffName();
+$staff_email = $_SESSION['staff_email'] ?? '';
 
 try {
     // Helper function to build conditions
     function getQueryCondition($is_engineer, $base_cond) {
         if ($is_engineer) {
-            return $base_cond . " AND assigned_engineer = ?";
+            return $base_cond . " AND (LOWER(TRIM(assigned_engineer)) = LOWER(TRIM(?)) OR LOWER(TRIM(assigned_engineer)) = LOWER(TRIM(?)))";
         }
         return $base_cond;
     }
@@ -31,7 +32,7 @@ try {
     $q_assigned = getQueryCondition($is_engineer, "SELECT COUNT(*) as count FROM services WHERE status = 'Assigned'");
     if ($is_engineer) {
         $stmt = $conn->prepare($q_assigned);
-        $stmt->bind_param("s", $staff_name);
+        $stmt->bind_param("ss", $staff_name, $staff_email);
         $stmt->execute();
         $assigned = (int)$stmt->get_result()->fetch_assoc()['count'];
         $stmt->close();
@@ -44,7 +45,7 @@ try {
     $q_inprogress = getQueryCondition($is_engineer, "SELECT COUNT(*) as count FROM services WHERE status IN ('In Progress', 'On Call', 'On Site')");
     if ($is_engineer) {
         $stmt = $conn->prepare($q_inprogress);
-        $stmt->bind_param("s", $staff_name);
+        $stmt->bind_param("ss", $staff_name, $staff_email);
         $stmt->execute();
         $inprogress = (int)$stmt->get_result()->fetch_assoc()['count'];
         $stmt->close();
@@ -57,7 +58,7 @@ try {
     $q_approval = getQueryCondition($is_engineer, "SELECT COUNT(*) as count FROM services WHERE engineer_submitted = 1 AND verified_by_admin IS NULL");
     if ($is_engineer) {
         $stmt = $conn->prepare($q_approval);
-        $stmt->bind_param("s", $staff_name);
+        $stmt->bind_param("ss", $staff_name, $staff_email);
         $stmt->execute();
         $pending_approval = (int)$stmt->get_result()->fetch_assoc()['count'];
         $stmt->close();
@@ -70,7 +71,7 @@ try {
     $q_billing = getQueryCondition($is_engineer, "SELECT COUNT(*) as count FROM services WHERE billing_status IN ('Billing Pending', 'Invoice Generated', 'Payment Pending')");
     if ($is_engineer) {
         $stmt = $conn->prepare($q_billing);
-        $stmt->bind_param("s", $staff_name);
+        $stmt->bind_param("ss", $staff_name, $staff_email);
         $stmt->execute();
         $pending_billing = (int)$stmt->get_result()->fetch_assoc()['count'];
         $stmt->close();
@@ -83,7 +84,7 @@ try {
     $q_closed_today = getQueryCondition($is_engineer, "SELECT COUNT(*) as count FROM services WHERE DATE(closed_at) = CURDATE()");
     if ($is_engineer) {
         $stmt = $conn->prepare($q_closed_today);
-        $stmt->bind_param("s", $staff_name);
+        $stmt->bind_param("ss", $staff_name, $staff_email);
         $stmt->execute();
         $closed_today = (int)$stmt->get_result()->fetch_assoc()['count'];
         $stmt->close();
@@ -96,7 +97,7 @@ try {
     $q_revenue = getQueryCondition($is_engineer, "SELECT SUM(service_value_internal) as sum_val FROM services WHERE DATE(billing_completed_at) = CURDATE()");
     if ($is_engineer) {
         $stmt = $conn->prepare($q_revenue);
-        $stmt->bind_param("s", $staff_name);
+        $stmt->bind_param("ss", $staff_name, $staff_email);
         $stmt->execute();
         $raw_rev = $stmt->get_result()->fetch_assoc()['sum_val'];
         $stmt->close();

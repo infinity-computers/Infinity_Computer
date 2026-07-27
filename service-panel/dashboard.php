@@ -622,7 +622,10 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
     <script src="assets/js/image-processor.js?v=2.0"></script>
     <script src="assets/js/main.js"></script>
     <script>
-        const IS_ADMIN = <?php echo json_encode(in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])); ?>;
+        const STAFF_ROLE = <?php echo json_encode(getStaffRole()); ?>;
+        const STAFF_NAME = <?php echo json_encode(getStaffName()); ?>;
+        const IS_ADMIN = <?php echo json_encode(isAdmin()); ?>;
+        const IS_SUPER_ADMIN = <?php echo json_encode(isSuperAdmin()); ?>;
         let currentFilter = '';
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -782,15 +785,34 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
                     document.getElementById('statusSelect').value = svc.status;
                     document.getElementById('engineerSelect').value = svc.assigned_engineer || '';
 
-                    // Disable engineer selection if Completed (unless admin)
+                    // Manage permissions for status & engineer updates
+                    const statusSelect = document.getElementById('statusSelect');
                     const engSelect = document.getElementById('engineerSelect');
                     const lockMsg = document.getElementById('engLockMsg');
-                    if (svc.status === 'Completed' && !IS_ADMIN) {
+                    const submitBtn = document.querySelector('#updateStatusForm button[type="submit"]');
+
+                    const assignedEng = (svc.assigned_engineer || '').toLowerCase().trim();
+                    const currentStaff = (STAFF_NAME || '').toLowerCase().trim();
+                    const isAssignedToCurrent = assignedEng === currentStaff;
+                    const canManageStatus = IS_ADMIN || isAssignedToCurrent;
+
+                    if (!canManageStatus) {
+                        statusSelect.disabled = true;
                         engSelect.disabled = true;
+                        if (submitBtn) submitBtn.disabled = true;
+                        lockMsg.innerText = 'Only the assigned engineer (' + (svc.assigned_engineer || 'Unassigned') + ') or Admin can update this ticket.';
                         lockMsg.style.display = 'block';
                     } else {
-                        engSelect.disabled = false;
-                        lockMsg.style.display = 'none';
+                        statusSelect.disabled = false;
+                        if (submitBtn) submitBtn.disabled = false;
+                        if (svc.status === 'Completed' && !IS_ADMIN) {
+                            engSelect.disabled = true;
+                            lockMsg.innerText = 'Assignment cannot be changed for completed jobs.';
+                            lockMsg.style.display = 'block';
+                        } else {
+                            engSelect.disabled = !IS_ADMIN;
+                            lockMsg.style.display = 'none';
+                        }
                     }
 
                     let html = `
