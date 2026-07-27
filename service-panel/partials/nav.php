@@ -7,8 +7,8 @@
 
 if (!isset($activeNav)) $activeNav = '';
 
-$isAdmin     = function_exists('isAdmin') ? isAdmin() : false;
-$staffEmail  = $_SESSION['staff_email'] ?? '';
+$isAdmin    = function_exists('isAdmin') ? isAdmin() : false;
+$staffEmail = $_SESSION['staff_email'] ?? '';
 
 // Billing dropdown is "active" when on billing OR reports
 $billingDropdownActive = in_array($activeNav, ['billing', 'reports']);
@@ -39,13 +39,13 @@ $billingDropdownActive = in_array($activeNav, ['billing', 'reports']);
             <li class="nav-dropdown<?= $billingDropdownActive ? ' dropdown-active' : '' ?>" id="billingDropdownLi">
                 <button class="nav-dropdown-btn<?= $billingDropdownActive ? ' header-active-btn' : '' ?>" onclick="toggleNavDropdown(event)" type="button">
                     Billing &amp; Reports
-                    <svg class="dropdown-arrow" viewBox="0 0 10 6" width="10" height="6" fill="none" aria-hidden="true">
-                        <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <svg class="dropdown-caret" viewBox="0 0 12 8" width="11" height="7" fill="none" aria-hidden="true">
+                        <path d="M1 1.5l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </button>
                 <ul class="nav-dropdown-menu">
-                    <li><a href="billing.php" <?= $activeNav === 'billing' ? 'class="dropdown-item-active"' : '' ?>>💳 Billing</a></li>
-                    <li><a href="reports.php" <?= $activeNav === 'reports' ? 'class="dropdown-item-active"' : '' ?>>📊 Reports</a></li>
+                    <li><a href="billing.php" <?= $activeNav === 'billing' ? 'class="dropdown-item-active"' : '' ?>>Billing</a></li>
+                    <li><a href="reports.php" <?= $activeNav === 'reports' ? 'class="dropdown-item-active"' : '' ?>>Reports</a></li>
                 </ul>
             </li>
             <?php endif; ?>
@@ -82,8 +82,7 @@ $billingDropdownActive = in_array($activeNav, ['billing', 'reports']);
             document.querySelectorAll('.nav-dropdown').forEach(function(d) { d.classList.remove('is-open'); });
         }
     });
-    // Expose for inline onclick
-    window.toggleMobileNav = toggleMobileNav;
+    window.toggleMobileNav  = toggleMobileNav;
     window.toggleNavDropdown = toggleNavDropdown;
 })();
 </script>
