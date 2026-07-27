@@ -70,6 +70,9 @@ $billingDropdownActive = in_array($activeNav, ['billing', 'reports']);
         if (btn) btn.classList.toggle('is-open');
     }
     function toggleNavDropdown(e) {
+        if (window.innerWidth > 900) {
+            return; // On desktop, CSS hover handles this, so ignore click
+        }
         e.stopPropagation();
         var li = e.currentTarget.closest('.nav-dropdown');
         if (!li) return;
@@ -78,6 +81,7 @@ $billingDropdownActive = in_array($activeNav, ['billing', 'reports']);
         if (!isOpen) li.classList.add('is-open');
     }
     document.addEventListener('click', function(e) {
+        if (window.innerWidth > 900) return;
         if (!e.target.closest('.nav-dropdown')) {
             document.querySelectorAll('.nav-dropdown').forEach(function(d) { d.classList.remove('is-open'); });
         }

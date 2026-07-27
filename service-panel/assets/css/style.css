@@ -189,6 +189,25 @@ header .container { display: flex; justify-content: space-between; align-items: 
 }
 .nav-dropdown.is-open > .nav-dropdown-menu { display: block; }
 
+/* Show on hover for desktop screens */
+@media (min-width: 901px) {
+    .nav-dropdown:hover > .nav-dropdown-menu {
+        display: block;
+    }
+    .nav-dropdown:hover > .nav-dropdown-btn > .dropdown-caret {
+        transform: rotate(180deg);
+        opacity: 0.8;
+    }
+    .nav-dropdown:hover > .nav-dropdown-btn {
+        color: var(--primary-color);
+        background: rgba(31, 95, 174, 0.06);
+    }
+    .nav-dropdown:hover > .nav-dropdown-btn::after {
+        width: 60%;
+        left: 20%;
+    }
+}
+
 /* Dropdown menu items — clean text rows like reference image */
 .nav-dropdown-menu li { margin: 0; }
 .nav-dropdown-menu a {
