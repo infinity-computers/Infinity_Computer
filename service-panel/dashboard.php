@@ -131,15 +131,6 @@ if ($engResult) {
             display: inline-block !important;
         }
 
-        /* Sync Header Underline */
-        .nav-links a.header-active {
-            color: var(--primary-color) !important;
-        }
-
-        .nav-links a.header-active::after {
-            width: 60% !important;
-            left: 20% !important;
-        }
 
         /* Live Operations Dashboard Counters */
         .stats-grid {
@@ -207,35 +198,7 @@ if ($engResult) {
 </head>
 
 <body>
-    <header>
-        <div class="container" style="padding:0;">
-            <a href="../index.html" style="display: flex; align-items: center; gap: 0.6rem; text-decoration: none;">
-                <img src="../images/logos/infinity_computer_logo.png" alt="Infinity Computer Logo"
-                    style="height: 38px; width: auto;">
-                <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1;">
-                    <span class="brand-text">Infinity<span class="text-accent">Computer</span></span>
-                    <span
-                        style="font-size: 0.65rem; color: #fb2a71; font-weight: 700; text-transform: uppercase;">Service
-                        Panel</span>
-                </div>
-            </a>
-            <ul class="nav-links">
-                <li><a href="index.php">Track Service</a></li>
-                <li><a href="javascript:void(0)" id="headerNewService" onclick="switchTab('new-service-tab')">Add New Service</a></li>
-                <li><a href="javascript:void(0)" id="headerDashboard" onclick="switchTab('main-workflow')" class="header-active">Dashboard</a></li>
-                <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
-                <li><a href="crm.php">CRM Analytics</a></li>
-                <li><a href="billing.php">Billing</a></li>
-                <li><a href="reports.php">Reports</a></li>
-                <?php endif; ?>
-                <li><a href="task_management.php">Task Management</a></li>
-                <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
-                <li><a href="engineers_management.php">Manage Staff</a></li>
-                <?php endif; ?>
-                <li><a href="logout.php">Logout</a></li>
-            </ul>
-        </div>
-    </header>
+<?php $activeNav = 'dashboard'; include __DIR__ . '/partials/nav.php'; ?>
 <?php
 // Error log display (temporary debug)
 $logDir = __DIR__ . '/../logs';

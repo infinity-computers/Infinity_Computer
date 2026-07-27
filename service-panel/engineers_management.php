@@ -120,30 +120,8 @@ if (!in_array($_SESSION['staff_email'] ?? '', $admins)) {
     </style>
 </head>
 <body>
-    <header>
-        <div class="container" style="padding:0;">
-            <a href="../index.html" style="display: flex; align-items: center; gap: 0.6rem; text-decoration: none;">
-                <img src="../images/logos/infinity_computer_logo.png" alt="Infinity Computer Logo" style="height: 38px; width: auto;">
-                <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1;">
-                    <span class="brand-text">Infinity<span class="text-accent">Computer</span></span>
-                    <span style="font-size: 0.65rem; color: #fb2a71; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;">Service Panel</span>
-                </div>
-            </a>
-            <ul class="nav-links">
-                <li><a href="index.php">Track Service</a></li>
-                <li><a href="index.php?tab=new-service">Add New Service</a></li>
-                <li><a href="dashboard.php">Dashboard</a></li>
-                <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
-                <li><a href="crm.php">CRM Analytics</a></li>
-                <?php endif; ?>
-                <li><a href="task_management.php">Task Management</a></li>
-                <?php if (in_array($_SESSION['staff_email'] ?? '', ['suraj@staff.infinitycomputer.in', 'icc@infinitycomputer.in'])): ?>
-                <li><a href="engineers_management.php" class="header-active">Manage Staff</a></li>
-                <?php endif; ?>
-                <li><a href="logout.php">Logout</a></li>
-            </ul>
-        </div>
-    </header>
+<?php $activeNav = 'staff'; include __DIR__ . '/partials/nav.php'; ?>
+
 
     <div class="container" style="max-width: 1000px; margin-top: 40px; margin-bottom: 40px;">
         <div class="page-header">
