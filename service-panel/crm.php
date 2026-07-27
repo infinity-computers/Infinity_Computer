@@ -53,6 +53,7 @@ if (!in_array($_SESSION['staff_email'] ?? '', $allowed_crm_emails)) {
         }
 
 
+    </style>
 </head>
 <body>
 <?php $activeNav = 'crm'; include __DIR__ . '/partials/nav.php'; ?>

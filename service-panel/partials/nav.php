@@ -1,24 +1,16 @@
 <?php
 /**
  * Shared Navigation Partial
- * Usage: include __DIR__ . '/../partials/nav.php';
- *        Set $activeNav before including:
- *          'track'    => Track Service
- *          'dashboard' => Dashboard
- *          'crm'      => CRM Analytics
- *          'billing'  => Billing
- *          'reports'  => Reports (sub of billing dropdown)
- *          'tasks'    => Task Management
- *          'staff'    => Manage Staff
+ * Set $activeNav before including:
+ *   'track' | 'dashboard' | 'crm' | 'billing' | 'reports' | 'tasks' | 'staff'
  */
 
 if (!isset($activeNav)) $activeNav = '';
 
-$isAdmin = function_exists('isAdmin') ? isAdmin() : false;
-$isSuperAdmin = function_exists('isSuperAdmin') ? isSuperAdmin() : false;
-$staffEmail = $_SESSION['staff_email'] ?? '';
+$isAdmin     = function_exists('isAdmin') ? isAdmin() : false;
+$staffEmail  = $_SESSION['staff_email'] ?? '';
 
-// Billing dropdown active when on billing OR reports
+// Billing dropdown is "active" when on billing OR reports
 $billingDropdownActive = in_array($activeNav, ['billing', 'reports']);
 ?>
 <header>
@@ -44,24 +36,16 @@ $billingDropdownActive = in_array($activeNav, ['billing', 'reports']);
             <li><a href="crm.php" <?= $activeNav === 'crm' ? 'class="header-active"' : '' ?>>CRM Analytics</a></li>
 
             <!-- Billing & Reports dropdown -->
-            <li class="nav-dropdown <?= $billingDropdownActive ? 'dropdown-active' : '' ?>">
-                <a href="billing.php" class="nav-dropdown-toggle <?= $billingDropdownActive ? 'header-active' : '' ?>" onclick="toggleNavDropdown(event)">
+            <li class="nav-dropdown<?= $billingDropdownActive ? ' dropdown-active' : '' ?>" id="billingDropdownLi">
+                <button class="nav-dropdown-btn<?= $billingDropdownActive ? ' header-active-btn' : '' ?>" onclick="toggleNavDropdown(event)" type="button">
                     Billing &amp; Reports
-                    <svg class="dropdown-arrow" viewBox="0 0 10 6" width="10" height="6" fill="none">
-                        <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    <svg class="dropdown-arrow" viewBox="0 0 10 6" width="10" height="6" fill="none" aria-hidden="true">
+                        <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
-                </a>
+                </button>
                 <ul class="nav-dropdown-menu">
-                    <li>
-                        <a href="billing.php" <?= $activeNav === 'billing' ? 'class="dropdown-item-active"' : '' ?>>
-                            💳 Billing
-                        </a>
-                    </li>
-                    <li>
-                        <a href="reports.php" <?= $activeNav === 'reports' ? 'class="dropdown-item-active"' : '' ?>>
-                            📊 Reports
-                        </a>
-                    </li>
+                    <li><a href="billing.php" <?= $activeNav === 'billing' ? 'class="dropdown-item-active"' : '' ?>>💳 Billing</a></li>
+                    <li><a href="reports.php" <?= $activeNav === 'reports' ? 'class="dropdown-item-active"' : '' ?>>📊 Reports</a></li>
                 </ul>
             </li>
             <?php endif; ?>
@@ -78,26 +62,28 @@ $billingDropdownActive = in_array($activeNav, ['billing', 'reports']);
 </header>
 
 <script>
-function toggleMobileNav() {
-    const nav = document.getElementById('mainNavLinks');
-    const btn = document.getElementById('navHamburger');
-    nav.classList.toggle('nav-open');
-    btn.classList.toggle('is-open');
-}
-function toggleNavDropdown(e) {
-    const li = e.currentTarget.closest('.nav-dropdown');
-    const isOpen = li.classList.contains('is-open');
-    // Close all dropdowns first
-    document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('is-open'));
-    if (!isOpen) {
-        li.classList.add('is-open');
-        e.preventDefault();
+(function() {
+    function toggleMobileNav() {
+        var nav = document.getElementById('mainNavLinks');
+        var btn = document.getElementById('navHamburger');
+        if (nav) nav.classList.toggle('nav-open');
+        if (btn) btn.classList.toggle('is-open');
     }
-}
-// Close dropdown on outside click
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.nav-dropdown')) {
-        document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('is-open'));
+    function toggleNavDropdown(e) {
+        e.stopPropagation();
+        var li = e.currentTarget.closest('.nav-dropdown');
+        if (!li) return;
+        var isOpen = li.classList.contains('is-open');
+        document.querySelectorAll('.nav-dropdown').forEach(function(d) { d.classList.remove('is-open'); });
+        if (!isOpen) li.classList.add('is-open');
     }
-});
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.nav-dropdown')) {
+            document.querySelectorAll('.nav-dropdown').forEach(function(d) { d.classList.remove('is-open'); });
+        }
+    });
+    // Expose for inline onclick
+    window.toggleMobileNav = toggleMobileNav;
+    window.toggleNavDropdown = toggleNavDropdown;
+})();
 </script>

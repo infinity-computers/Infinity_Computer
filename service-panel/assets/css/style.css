@@ -106,16 +106,52 @@ header .container { display: flex; justify-content: space-between; align-items: 
 
 /* --- Dropdown Wrapper --- */
 .nav-dropdown { position: relative; }
-.nav-dropdown-toggle {
+
+/* Dropdown trigger button — visually identical to a nav link */
+.nav-dropdown-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.4rem 0.65rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #334152;
+    background: none;
+    border: none;
+    border-radius: 6px;
     cursor: pointer;
-    user-select: none;
+    white-space: nowrap;
+    position: relative;
+    transition: color 0.2s, background 0.2s;
+    line-height: inherit;
+}
+.nav-dropdown-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 50%;
+    width: 0; height: 2px;
+    background: var(--primary-color);
+    transition: width 0.3s ease, left 0.3s ease;
+    border-radius: 2px;
+}
+.nav-dropdown-btn:hover {
+    color: var(--primary-color);
+    background: rgba(31,95,174,0.06);
+}
+.nav-dropdown-btn.header-active-btn {
+    color: var(--primary-color) !important;
+    font-weight: 600;
+}
+.nav-dropdown-btn.header-active-btn::after {
+    width: 60%; left: 20%;
 }
 .dropdown-arrow {
     transition: transform 0.25s ease;
     flex-shrink: 0;
-    opacity: 0.6;
+    opacity: 0.55;
 }
-.nav-dropdown.is-open > a > .dropdown-arrow { transform: rotate(180deg); }
+.nav-dropdown.is-open > .nav-dropdown-btn > .dropdown-arrow { transform: rotate(180deg); }
 
 .nav-dropdown-menu {
     display: none;
@@ -159,9 +195,9 @@ header .container { display: flex; justify-content: space-between; align-items: 
     color: var(--primary-color);
     font-weight: 700;
 }
-/* Billing dropdown active — highlight parent toggle too */
-.nav-dropdown.dropdown-active > a { color: var(--primary-color) !important; font-weight: 600; }
-.nav-dropdown.dropdown-active > a::after { width: 60%; left: 20%; }
+/* Billing dropdown active — highlight parent button too */
+.nav-dropdown.dropdown-active > .nav-dropdown-btn { color: var(--primary-color) !important; font-weight: 600; }
+.nav-dropdown.dropdown-active > .nav-dropdown-btn::after { width: 60%; left: 20%; }
 
 /* --- Logout button --- */
 .nav-links a[href="logout.php"] {
