@@ -9,7 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$sessionTimeout = 15 * 60; // 15 minutes
+$sessionTimeout = 60 * 60; // 1 hour
 
 // Check if authenticated using the new variable name
 if (!isset($_SESSION['staff_logged_in']) || $_SESSION['staff_logged_in'] !== true) {
