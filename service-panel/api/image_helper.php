@@ -199,6 +199,16 @@ function processAndSaveAmcImage($file, $target_dir, $lat = null, $lng = null, $w
                 imagettftext($image, $fsize * 0.7, $angle, $x + $shift, $y, $white_visible, $font_path, $text);
             }
         }
+    } else {
+        $text_small = "infinity computer";
+        $white_fill = imagecolorallocatealpha($image, 255, 255, 255, 60);
+        for ($y = 40; $y < $height - 100; $y += 100) {
+            $row_index = floor($y / 100);
+            $shift = ($row_index % 2) * 60;
+            for ($x = -20; $x < $width; $x += 160) {
+                imagestring($image, 3, $x + $shift, $y, $text_small, $white_fill);
+            }
+        }
     }
 
     // 2. Bottom AMC Overlay Banner with INFINITY COMPUTER, Date, Time, Lat & Lng
