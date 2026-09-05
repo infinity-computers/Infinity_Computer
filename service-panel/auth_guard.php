@@ -38,12 +38,16 @@ if (isset($_SESSION['staff_login_time']) && (time() - $_SESSION['staff_login_tim
 // Update last activity
 $_SESSION['staff_last_activity'] = time();
 
-// Inject client-side auto-redirect timer for session expiry (Pages only, not APIs)
+// Inject client-side auto-redirect timer for session expiry cleanly at end of output (Pages only, not APIs)
 if (strpos($_SERVER['PHP_SELF'], '/api/') === false) {
-    $remainingMs = ($sessionTimeout - (time() - $_SESSION['staff_login_time'])) * 1000;
-    if ($remainingMs > 0) {
-        echo "<script>setTimeout(function(){window.location.href='login.php?expired=1';}," . $remainingMs . ");</script>\n";
-    }
+    register_shutdown_function(function() use ($sessionTimeout) {
+        if (isset($_SESSION['staff_login_time'])) {
+            $remainingMs = ($sessionTimeout - (time() - $_SESSION['staff_login_time'])) * 1000;
+            if ($remainingMs > 0) {
+                echo "<script>setTimeout(function(){window.location.href='login.php?expired=1';}," . $remainingMs . ");</script>\n";
+            }
+        }
+    });
 }
 
 if (!function_exists('getStaffRole')) {

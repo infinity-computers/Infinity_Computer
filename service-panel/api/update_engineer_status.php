@@ -47,15 +47,17 @@ try {
         exit;
     }
 
-    // Ensure status column exists before updating
-    @$conn->query("ALTER TABLE `engineers` ADD COLUMN `status` ENUM('Active', 'On Call', 'In Transit', 'On Job', 'On Hold', 'Off Duty') DEFAULT 'Active'");
-    @$conn->query("ALTER TABLE `engineers` ADD COLUMN `last_activity_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
-
     // Update status
-    $upd = $conn->prepare("UPDATE engineers SET status = ?, last_activity_at = NOW() WHERE name = ?");
-    $upd->bind_param("ss", $status, $name);
-    $upd->execute();
-    $upd->close();
+    try {
+        $upd = $conn->prepare("UPDATE engineers SET status = ?, last_activity_at = NOW() WHERE name = ?");
+        $upd->bind_param("ss", $status, $name);
+        $upd->execute();
+        $upd->close();
+    } catch (\Throwable $e) {
+        // If status or last_activity_at column does not exist yet
+        echo json_encode(['status' => 'error', 'message' => 'Status column is not present in engineers table. Please run update_engineers_table.php once.']);
+        exit;
+    }
 
     echo json_encode([
         'status' => 'success',
