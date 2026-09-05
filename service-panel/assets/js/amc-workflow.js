@@ -249,16 +249,50 @@ window.AMC = {
         // ===== WIZARD STEP 1: ACCEPT ASSIGNMENT =====
         if (this.activeStep === 1) {
             html += `
-                <div style="text-align:center; padding:30px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px;">
+                <div style="text-align:center; padding:30px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; margin-bottom:20px;">
                     <h4 style="color:#0369a1; margin-bottom:10px;">Step 1 of 5: Accept AMC Assignment</h4>
                     <p style="color:#0c4a6e; font-size:0.95rem; margin-bottom:20px;">Please confirm acceptance of this AMC visit assignment to begin customer visit workflow.</p>
                     ${status === 'ASSIGNED' ? `
-                        <button class="btn btn-primary" onclick="window.AMC.submitAccept(${visit.id})" style="padding:12px 30px; font-size:1.1rem;">Accept Assignment &amp; Proceed to Step 2 ➔</button>
+                        <button class="btn btn-primary" onclick="window.AMC.submitAccept(${visit.id})" style="padding:12px 30px; font-size:1.1rem; font-weight:700;">Accept Assignment &amp; Proceed to Step 2 ➔</button>
                     ` : `
                         <div style="color:#0284c7; font-weight:700; margin-bottom:15px;">✓ Assignment Accepted</div>
                         <button type="button" class="btn btn-secondary" onclick="window.AMC.setWizardStep(2)">Proceed to Step 2 (Reach Location) ➔</button>
                     `}
                 </div>
+
+                ${!isCompleted ? `
+                <div style="background:#fff7ed; border:1px solid #ffedd5; border-radius:12px; padding:20px; text-align:center;">
+                    <h5 style="color:#c2410c; margin-top:0; margin-bottom:8px;">⚠️ Unable to perform visit on scheduled date?</h5>
+                    <p style="color:#9a3412; font-size:0.9rem; margin-bottom:15px;">If you cannot complete this AMC maintenance visit today, reassign it immediately to another engineer to prevent 48-hour inactivity escalation.</p>
+                    <button type="button" class="btn btn-warning" onclick="window.AMC.toggleReassignSection(${visit.id})" style="font-weight:700; padding:10px 20px;">🔄 Reassign Task to Another Engineer</button>
+                    
+                    <div id="reassignSection_${visit.id}" style="display:none; margin-top:20px; text-align:left; background:#ffffff; border:1px solid #fed7aa; padding:20px; border-radius:10px;">
+                        <h5 style="margin-top:0; color:#9a3412;">Select Target Engineer for Reassignment:</h5>
+                        <form onsubmit="window.AMC.submitReassign(event, ${visit.id})">
+                            <div class="form-group mb-3">
+                                <label style="font-weight:600; color:#334155;">Target Engineer *</label>
+                                <select name="new_engineer" class="form-control" required style="font-weight:600;">
+                                    <option value="">-- Select Engineer --</option>
+                                    <option value="Suraj">Suraj</option>
+                                    <option value="Akshar">Akshar</option>
+                                    <option value="Karan">Karan</option>
+                                    <option value="Rahul">Rahul</option>
+                                    <option value="Paresh">Paresh</option>
+                                    <option value="icc">icc (Admin Escalation)</option>
+                                </select>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label style="font-weight:600; color:#334155;">Reason for Reassignment *</label>
+                                <textarea name="reason" class="form-control" rows="2" required placeholder="e.g. Schedule conflict / out of station / emergency..."></textarea>
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                                <button type="button" class="btn btn-secondary" onclick="window.AMC.toggleReassignSection(${visit.id})">Cancel</button>
+                                <button type="submit" class="btn btn-warning" style="font-weight:700;">Confirm Reassignment &amp; Notify Email ➔</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                ` : ''}
             `;
         }
 
@@ -681,6 +715,44 @@ window.AMC = {
             alert('Completion submission failed.');
             btn.disabled = false;
             btn.innerText = 'COMPLETE VISIT & DEPART';
+        }
+    },
+
+    toggleReassignSection: function (visitId) {
+        const sec = document.getElementById(`reassignSection_${visitId}`);
+        if (sec) {
+            sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+        }
+    },
+
+    submitReassign: async function (e, visitId) {
+        e.preventDefault();
+        const form = e.target;
+        const btn = form.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerText = 'Reassigning & Emailing Engineer...';
+
+        const formData = new FormData(form);
+        formData.append('action', 'self_reassign');
+        formData.append('visit_id', visitId);
+
+        try {
+            const res = await fetch('api/amc_visits_api.php', { method: 'POST', body: formData });
+            const json = await res.json();
+            if (json.status === 'success') {
+                alert('🔄 ' + json.message);
+                this.openVisitModal(visitId);
+                if (typeof loadMyAmcAssignments === 'function') loadMyAmcAssignments();
+                if (typeof loadAllAmcVisits === 'function') loadAllAmcVisits();
+            } else {
+                alert('Error: ' + json.message);
+                btn.disabled = false;
+                btn.innerText = 'Confirm Reassignment & Notify Email ➔';
+            }
+        } catch (err) {
+            alert('Reassignment failed.');
+            btn.disabled = false;
+            btn.innerText = 'Confirm Reassignment & Notify Email ➔';
         }
     },
 

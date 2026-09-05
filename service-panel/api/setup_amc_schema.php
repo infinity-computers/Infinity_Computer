@@ -125,6 +125,9 @@ try {
         follow_up_notes TEXT DEFAULT NULL,
         escalation_level INT DEFAULT 0,
         is_inactive_reassigned TINYINT(1) DEFAULT 0,
+        scheduled_day_email_sent TINYINT(1) DEFAULT 0,
+        last_reminder_sent_at TIMESTAMP NULL DEFAULT NULL,
+        reminder_count INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX(contract_id),
@@ -133,6 +136,10 @@ try {
         INDEX(status),
         FOREIGN KEY (contract_id) REFERENCES amc_contracts(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    addColumnIfNotExistsAmc($conn, 'amc_visits', 'scheduled_day_email_sent', "TINYINT(1) DEFAULT 0");
+    addColumnIfNotExistsAmc($conn, 'amc_visits', 'last_reminder_sent_at', "TIMESTAMP NULL DEFAULT NULL");
+    addColumnIfNotExistsAmc($conn, 'amc_visits', 'reminder_count', "INT DEFAULT 0");
 
     // 5. AMC Engineer Assignments Audit & History Table
     $conn->query("CREATE TABLE IF NOT EXISTS amc_assignments (

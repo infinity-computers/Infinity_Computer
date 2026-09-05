@@ -107,6 +107,9 @@ function generateAmcVisits($conn, $contract_id, $start_date, $end_date, $visit_c
 
         logAmcAudit($conn, $contract_id, $visit_id, 'Visit Scheduled', $created_by, 'Admin', "Visit #{$i} scheduled for {$schedDateStr}, assigned to {$assignedEng}");
 
+        // Send assignment email to engineer
+        sendAmcEngineerAssignmentEmail($conn, $visit_id, false);
+
         $createdVisits[] = [
             'visit_id' => $visit_id,
             'visit_number' => $i,
@@ -122,9 +125,337 @@ function generateAmcVisits($conn, $contract_id, $start_date, $end_date, $visit_c
 }
 
 /**
+ * Get Engineer Email Address by Name (DB + Fallback Map)
+ */
+function getEngineerEmailByName($conn, $engineer_name) {
+    if (empty($engineer_name)) return 'icc@infinitycomputer.in';
+
+    $fallbackMap = [
+        'Suraj' => 'suraj@staff.infinitycomputer.in',
+        'Akshar' => 'akshar@staff.infinitycomputer.in',
+        'Karan' => 'karan@staff.infinitycomputer.in',
+        'Rahul' => 'rahul@staff.infinitycomputer.in',
+        'Paresh' => 'paresh@staff.infinitycomputer.in',
+        'Om' => 'om@dev.infinitycomputer.in',
+        'Jatin' => 'jatin@dev.infinitycomputer.in',
+        'icc' => 'icc@infinitycomputer.in',
+        'Admin' => 'icc@infinitycomputer.in'
+    ];
+
+    try {
+        $eName = $conn->real_escape_string($engineer_name);
+        $res = $conn->query("SELECT email FROM engineers WHERE name = '$eName' AND email IS NOT NULL AND email != '' LIMIT 1");
+        if ($res && $res->num_rows > 0) {
+            $row = $res->fetch_assoc();
+            if (!empty($row['email'])) {
+                return $row['email'];
+            }
+        }
+    } catch (\Throwable $e) {
+        // Ignore DB lookup issues
+    }
+
+    if (isset($fallbackMap[$engineer_name])) {
+        return $fallbackMap[$engineer_name];
+    }
+
+    return strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $engineer_name)) . '@staff.infinitycomputer.in';
+}
+
+/**
+ * Send AMC Engineer Assignment Email
+ */
+function sendAmcEngineerAssignmentEmail($conn, $visit_id, $is_reassignment = false) {
+    $stmt = $conn->prepare("
+        SELECT v.*, c.amc_number, c.customer_name, c.customer_phone, c.customer_email, c.customer_address, c.company_name
+        FROM amc_visits v
+        JOIN amc_contracts c ON v.contract_id = c.id
+        WHERE v.id = ?
+    ");
+    $stmt->bind_param("i", $visit_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    if (!$res || $res->num_rows === 0) return false;
+    $visit = $res->fetch_assoc();
+
+    $engineer_name = $visit['assigned_engineer'];
+    $engineer_email = getEngineerEmailByName($conn, $engineer_name);
+    if (empty($engineer_email)) return false;
+
+    // Fetch Products Covered
+    $cpRes = $conn->query("SELECT product_name, quantity, serial_number FROM amc_contract_products WHERE contract_id = {$visit['contract_id']}");
+    $prods = [];
+    if ($cpRes) {
+        while ($cpRow = $cpRes->fetch_assoc()) {
+            $prods[] = $cpRow['product_name'] . ($cpRow['quantity'] > 1 ? " (x{$cpRow['quantity']})" : "") . ($cpRow['serial_number'] ? " [SN: {$cpRow['serial_number']}]" : "");
+        }
+    }
+    $productsStr = !empty($prods) ? implode(', ', $prods) : 'General Computer/Network Equipment';
+
+    $subject = $is_reassignment 
+        ? "🔄 AMC Visit Re-assigned to You: Visit #{$visit['visit_number']} ({$visit['amc_number']})" 
+        : "🔧 New AMC Service Visit Assigned: Visit #{$visit['visit_number']} ({$visit['amc_number']})";
+
+    $headers = "MIME-Version: 1.0\r\nContent-type:text/html;charset=UTF-8\r\nFrom: Infinity Computer <noreply@infinitycomputer.in>\r\n";
+
+    $title = $is_reassignment ? "AMC Visit Re-assigned to You" : "New AMC Visit Scheduled & Assigned";
+
+    $msg = "
+    <html>
+    <head><title>{$title}</title></head>
+    <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0;'>
+        <div style='max-width: 650px; margin: 20px auto; padding: 25px; border: 1px solid #3b82f6; border-top: 5px solid #1d4ed8; border-radius: 12px; background: #ffffff;'>
+            <h2 style='color: #1d4ed8; text-align: center; margin-top: 0;'>🛡️ {$title}</h2>
+            <p>Hello <strong>{$engineer_name}</strong>,</p>
+            <p>You have been assigned an Annual Maintenance Contract (AMC) service visit. Below are the full details of the customer and maintenance tasks:</p>
+
+            <div style='background: #eff6ff; padding: 18px; border-radius: 8px; border: 1px solid #bfdbfe; margin: 20px 0;'>
+                <table style='width: 100%; border-collapse: collapse;'>
+                    <tr><td style='padding: 6px 0; font-weight: bold; width: 140px; color: #1e40af;'>AMC Number:</td><td style='padding: 6px 0; font-weight: bold; color: #1d4ed8;'>{$visit['amc_number']} (Visit #{$visit['visit_number']})</td></tr>
+                    <tr><td style='padding: 6px 0; font-weight: bold; color: #1e40af;'>Scheduled Date:</td><td style='padding: 6px 0; font-weight: bold; color: #dc2626;'>📅 {$visit['scheduled_date']}</td></tr>
+                    <tr><td style='padding: 6px 0; font-weight: bold; color: #1e40af;'>Due Date:</td><td style='padding: 6px 0;'>{$visit['due_date']}</td></tr>
+                    <tr><td style='padding: 6px 0; font-weight: bold; color: #1e40af;'>Customer Name:</td><td style='padding: 6px 0; font-weight: bold;'>{$visit['customer_name']} " . ($visit['company_name'] ? "({$visit['company_name']})" : "") . "</td></tr>
+                    <tr><td style='padding: 6px 0; font-weight: bold; color: #1e40af;'>Contact Phone:</td><td style='padding: 6px 0;'>📞 <a href='tel:{$visit['customer_phone']}'>{$visit['customer_phone']}</a></td></tr>
+                    <tr><td style='padding: 6px 0; font-weight: bold; color: #1e40af;'>Site Address:</td><td style='padding: 6px 0;'>📍 {$visit['customer_address']}</td></tr>
+                    <tr><td style='padding: 6px 0; font-weight: bold; color: #1e40af;'>Covered Equipment:</td><td style='padding: 6px 0;'>📦 {$productsStr}</td></tr>
+                </table>
+            </div>
+
+            <div style='background: #fff7ed; padding: 15px; border-radius: 8px; border: 1px solid #ffedd5; margin-bottom: 20px;'>
+                <strong style='color: #c2410c; display: block; margin-bottom: 5px;'>📋 Maintenance Work Required:</strong>
+                <p style='margin: 0; color: #9a3412; font-size: 0.95rem;'>
+                    Perform routine maintenance inspection on all covered equipment, take arrival and departure photographs with GPS watermark, record any damaged/faulty parts, and submit final service remarks.
+                </p>
+            </div>
+
+            <div style='background: #fef2f2; padding: 15px; border-radius: 8px; border: 1px solid #fecaca; margin-bottom: 20px; color: #991b1b; font-size: 0.9rem;'>
+                <strong>⚠️ Reassignment Policy Notice:</strong><br>
+                If it is <strong>not possible</strong> for you to perform this visit on the scheduled date, please log in to the AMC Service Panel immediately to <strong>reassign this task to another engineer</strong>. Unattended visits will automatically reassign after 48 hours and escalate to Admin.
+            </div>
+
+            <div style='text-align: center; margin: 25px 0;'>
+                <a href='https://infinitycomputer.in/service-panel/amc.php' style='background: #1d4ed8; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; box-shadow: 0 4px 10px rgba(29,78,216,0.2);'>Open AMC Service Panel</a>
+            </div>
+
+            <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;'>
+            <p style='font-size: 11px; color: #64748b; text-align: center;'>
+                &copy; " . date('Y') . " Infinity Computer. Automated Service Notification.
+            </p>
+        </div>
+    </body>
+    </html>
+    ";
+
+    return @mail($engineer_email, $subject, $msg, $headers);
+}
+
+/**
+ * Send Email Notification On The Scheduled Date ("Day when engineer needs to go")
+ */
+function sendAmcScheduledDayEmail($conn, $visit_id) {
+    $stmt = $conn->prepare("
+        SELECT v.*, c.amc_number, c.customer_name, c.customer_phone, c.customer_email, c.customer_address, c.company_name
+        FROM amc_visits v
+        JOIN amc_contracts c ON v.contract_id = c.id
+        WHERE v.id = ?
+    ");
+    $stmt->bind_param("i", $visit_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    if (!$res || $res->num_rows === 0) return false;
+    $visit = $res->fetch_assoc();
+
+    $engineer_name = $visit['assigned_engineer'];
+    $engineer_email = getEngineerEmailByName($conn, $engineer_name);
+    if (empty($engineer_email)) return false;
+
+    // Fetch Products Covered
+    $cpRes = $conn->query("SELECT product_name, quantity FROM amc_contract_products WHERE contract_id = {$visit['contract_id']}");
+    $prods = [];
+    if ($cpRes) {
+        while ($cpRow = $cpRes->fetch_assoc()) $prods[] = $cpRow['product_name'] . ($cpRow['quantity'] > 1 ? " (x{$cpRow['quantity']})" : "");
+    }
+    $productsStr = !empty($prods) ? implode(', ', $prods) : 'General Equipment';
+
+    $subject = "📅 TODAY'S SCHEDULED AMC VISIT: Visit #{$visit['visit_number']} ({$visit['amc_number']}) - {$visit['customer_name']}";
+    $headers = "MIME-Version: 1.0\r\nContent-type:text/html;charset=UTF-8\r\nFrom: Infinity Computer <noreply@infinitycomputer.in>\r\n";
+
+    $msg = "
+    <html>
+    <head><title>Scheduled AMC Visit Today</title></head>
+    <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0;'>
+        <div style='max-width: 650px; margin: 20px auto; padding: 25px; border: 2px solid #0284c7; border-radius: 12px; background: #ffffff;'>
+            <div style='background: #0284c7; color: #ffffff; padding: 12px; text-align: center; font-size: 1.2rem; font-weight: bold; border-radius: 8px; margin-bottom: 20px;'>
+                📅 YOU HAVE A SCHEDULED AMC VISIT TODAY!
+            </div>
+
+            <p>Hello <strong>{$engineer_name}</strong>,</p>
+            <p>This is a notification that you have an AMC service visit scheduled for <strong>TODAY ({$visit['scheduled_date']})</strong>.</p>
+
+            <div style='background: #f0f9ff; padding: 18px; border-radius: 8px; border: 1px solid #bae6fd; margin: 20px 0;'>
+                <table style='width: 100%; border-collapse: collapse;'>
+                    <tr><td style='padding: 6px 0; font-weight: bold; width: 140px; color: #0369a1;'>AMC Number:</td><td style='padding: 6px 0; font-weight: bold; color: #0284c7;'>{$visit['amc_number']} (Visit #{$visit['visit_number']})</td></tr>
+                    <tr><td style='padding: 6px 0; font-weight: bold; color: #0369a1;'>Scheduled Date:</td><td style='padding: 6px 0; font-weight: bold; color: #dc2626;'>{$visit['scheduled_date']}</td></tr>
+                    <tr><td style='padding: 6px 0; font-weight: bold; color: #0369a1;'>Customer Name:</td><td style='padding: 6px 0; font-weight: bold;'>{$visit['customer_name']} " . ($visit['company_name'] ? "({$visit['company_name']})" : "") . "</td></tr>
+                    <tr><td style='padding: 6px 0; font-weight: bold; color: #0369a1;'>Phone Number:</td><td style='padding: 6px 0;'>📞 <a href='tel:{$visit['customer_phone']}'>{$visit['customer_phone']}</a></td></tr>
+                    <tr><td style='padding: 6px 0; font-weight: bold; color: #0369a1;'>Site Address:</td><td style='padding: 6px 0;'>📍 {$visit['customer_address']}</td></tr>
+                    <tr><td style='padding: 6px 0; font-weight: bold; color: #0369a1;'>Products Covered:</td><td style='padding: 6px 0;'>📦 {$productsStr}</td></tr>
+                </table>
+            </div>
+
+            <div style='background: #fef2f2; padding: 15px; border-radius: 8px; border: 1px solid #fecaca; margin-bottom: 20px; color: #991b1b;'>
+                <strong>📌 Action Required:</strong><br>
+                Please reach the site, accept the assignment, upload arrival & departure photos with GPS watermark, and complete the inspection.<br><br>
+                <em>If it is not possible for you to complete this visit today, please reassign this task to another engineer via the Service Panel.</em>
+            </div>
+
+            <div style='text-align: center; margin: 25px 0;'>
+                <a href='https://infinitycomputer.in/service-panel/amc.php' style='background: #0284c7; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Open AMC Service Panel</a>
+            </div>
+
+            <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;'>
+            <p style='font-size: 11px; color: #64748b; text-align: center;'>
+                &copy; " . date('Y') . " Infinity Computer. System Notification.
+            </p>
+        </div>
+    </body>
+    </html>
+    ";
+
+    return @mail($engineer_email, $subject, $msg, $headers);
+}
+
+/**
+ * Send Periodic Reminder Email (Every few hours during 48-hour window)
+ */
+function sendAmcPeriodicReminderEmail($conn, $visit_id) {
+    $stmt = $conn->prepare("
+        SELECT v.*, c.amc_number, c.customer_name, c.customer_phone, c.customer_address
+        FROM amc_visits v
+        JOIN amc_contracts c ON v.contract_id = c.id
+        WHERE v.id = ?
+    ");
+    $stmt->bind_param("i", $visit_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    if (!$res || $res->num_rows === 0) return false;
+    $visit = $res->fetch_assoc();
+
+    $engineer_name = $visit['assigned_engineer'];
+    $engineer_email = getEngineerEmailByName($conn, $engineer_name);
+    if (empty($engineer_email)) return false;
+
+    $remCount = intval($visit['reminder_count']) + 1;
+    $subject = "⏰ REMINDER (#{$remCount}): Pending AMC Visit Maintenance - Visit #{$visit['visit_number']} ({$visit['amc_number']})";
+    $headers = "MIME-Version: 1.0\r\nContent-type:text/html;charset=UTF-8\r\nFrom: Infinity Computer <noreply@infinitycomputer.in>\r\n";
+
+    $msg = "
+    <html>
+    <head><title>AMC Visit Maintenance Reminder</title></head>
+    <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0;'>
+        <div style='max-width: 650px; margin: 20px auto; padding: 25px; border: 2px solid #f59e0b; border-radius: 12px; background: #ffffff;'>
+            <div style='background: #f59e0b; color: #ffffff; padding: 12px; text-align: center; font-size: 1.1rem; font-weight: bold; border-radius: 8px; margin-bottom: 20px;'>
+                ⏰ PERIODIC REMINDER: AMC VISIT PENDING
+            </div>
+
+            <p>Hello <strong>{$engineer_name}</strong>,</p>
+            <p>This is reminder <strong>#{$remCount}</strong> regarding your assigned AMC service visit that requires maintenance action.</p>
+
+            <div style='background: #fffbeb; padding: 18px; border-radius: 8px; border: 1px solid #fef3c7; margin: 20px 0;'>
+                <p style='margin: 5px 0;'><strong>AMC Number:</strong> <span style='color: #d97706; font-weight: bold;'>{$visit['amc_number']} (Visit #{$visit['visit_number']})</span></p>
+                <p style='margin: 5px 0;'><strong>Scheduled Date:</strong> {$visit['scheduled_date']}</p>
+                <p style='margin: 5px 0;'><strong>Customer Name:</strong> {$visit['customer_name']}</p>
+                <p style='margin: 5px 0;'><strong>Phone:</strong> 📞 {$visit['customer_phone']}</p>
+                <p style='margin: 5px 0;'><strong>Address:</strong> 📍 {$visit['customer_address']}</p>
+                <p style='margin: 5px 0;'><strong>Current Status:</strong> <span style='font-weight: bold; color: #b45309;'>{$visit['status']}</span></p>
+            </div>
+
+            <div style='background: #fef2f2; padding: 15px; border-radius: 8px; border: 1px solid #fee2e2; margin-bottom: 20px; color: #991b1b;'>
+                <strong>⚠️ Auto-Reassignment Warning:</strong><br>
+                If no progress or changes are recorded within 48 hours of assignment, this task will <strong>automatically be reassigned to another engineer</strong>. If still unattended, it will escalate to Admin.<br><br>
+                <em>If you are unable to perform this maintenance visit, please log in and reassign it to another engineer immediately.</em>
+            </div>
+
+            <div style='text-align: center; margin: 25px 0;'>
+                <a href='https://infinitycomputer.in/service-panel/amc.php' style='background: #d97706; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Open AMC Service Panel &amp; Update Visit</a>
+            </div>
+
+            <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;'>
+            <p style='font-size: 11px; color: #64748b; text-align: center;'>
+                &copy; " . date('Y') . " Infinity Computer. Automated Reminder Worker.
+            </p>
+        </div>
+    </body>
+    </html>
+    ";
+
+    return @mail($engineer_email, $subject, $msg, $headers);
+}
+
+/**
+ * Process Scheduled Day Notifications and Periodic Reminders
+ */
+function processAmcScheduledDayAndReminderEmails($conn) {
+    $todayStr = date('Y-m-d');
+    $scheduledSent = 0;
+    $remindersSent = 0;
+
+    // 1. Send Scheduled Day Emails for visits scheduled on or before today that haven't received it
+    $qSched = "
+        SELECT id FROM amc_visits
+        WHERE scheduled_date <= '$todayStr'
+        AND scheduled_day_email_sent = 0
+        AND status NOT IN ('COMPLETED', 'CANCELLED')
+    ";
+    $rSched = $conn->query($qSched);
+    if ($rSched) {
+        while ($row = $rSched->fetch_assoc()) {
+            $vId = intval($row['id']);
+            if (sendAmcScheduledDayEmail($conn, $vId)) {
+                $conn->query("UPDATE amc_visits SET scheduled_day_email_sent = 1 WHERE id = {$vId}");
+                $scheduledSent++;
+            }
+        }
+    }
+
+    // 2. Send Periodic Reminders Every 6 Hours during the 48-hour window for pending visits
+    $qRem = "
+        SELECT id, reminder_count FROM amc_visits
+        WHERE scheduled_date <= '$todayStr'
+        AND status IN ('ASSIGNED', 'ACCEPTED')
+        AND (
+            last_reminder_sent_at IS NULL 
+            OR last_reminder_sent_at <= NOW() - INTERVAL 6 HOUR
+        )
+        AND (
+            assignment_timestamp IS NULL
+            OR assignment_timestamp >= NOW() - INTERVAL 48 HOUR
+        )
+    ";
+    $rRem = $conn->query($qRem);
+    if ($rRem) {
+        while ($row = $rRem->fetch_assoc()) {
+            $vId = intval($row['id']);
+            if (sendAmcPeriodicReminderEmail($conn, $vId)) {
+                $conn->query("UPDATE amc_visits SET last_reminder_sent_at = NOW(), reminder_count = reminder_count + 1 WHERE id = {$vId}");
+                $remindersSent++;
+            }
+        }
+    }
+
+    return [
+        'scheduled_emails_sent' => $scheduledSent,
+        'reminder_emails_sent' => $remindersSent
+    ];
+}
+
+/**
  * 48-Hour Automatic Inactivity Reassignment & Escalation System
  */
 function checkAndApply48HourReassignment($conn) {
+    // Process scheduled day and periodic reminder emails first
+    processAmcScheduledDayAndReminderEmails($conn);
+
     // Read configured reassignment window (default 48 hours)
     $hoursConfig = 48;
     $resSet = $conn->query("SELECT setting_value FROM amc_settings WHERE setting_key = 'reassignment_hours'");
@@ -159,18 +490,16 @@ function checkAndApply48HourReassignment($conn) {
     }
 
     while ($visit = $res->fetch_assoc()) {
-        $visit_id = $visit['id'];
-        $contract_id = $visit['contract_id'];
+        $visit_id = intval($visit['id']);
+        $contract_id = intval($visit['contract_id']);
         $currentEng = $visit['assigned_engineer'];
         $escalationLevel = intval($visit['escalation_level']);
 
         if ($escalationLevel == 0) {
-            // STEP 1: Reassign to next available engineer
-            // Select candidate with minimum current assigned visits excluding currentEng
+            // STEP 1: Reassign to next available engineer with lowest workload
             $candidates = array_diff($allEngNames, [$currentEng]);
             if (empty($candidates)) $candidates = $allEngNames;
 
-            // Find lowest workload engineer
             $bestEng = reset($candidates);
             $minWorkload = 99999;
             foreach ($candidates as $engCandidate) {
@@ -186,8 +515,14 @@ function checkAndApply48HourReassignment($conn) {
             // Mark previous assignment inactive
             $conn->query("UPDATE amc_assignments SET status = 'Reassigned', expired_at = NOW() WHERE visit_id = {$visit_id} AND status = 'Active'");
 
-            // Update visit record
-            $stmtUpd = $conn->prepare("UPDATE amc_visits SET assigned_engineer = ?, status = 'ASSIGNED', escalation_level = 1, is_inactive_reassigned = 1, assignment_timestamp = NOW(), last_activity_timestamp = NOW() WHERE id = ?");
+            // Update visit record: reset timestamps & scheduled_day_email_sent for new engineer
+            $stmtUpd = $conn->prepare("
+                UPDATE amc_visits 
+                SET assigned_engineer = ?, status = 'ASSIGNED', escalation_level = 1, is_inactive_reassigned = 1, 
+                    assignment_timestamp = NOW(), last_activity_timestamp = NOW(), scheduled_day_email_sent = 0, 
+                    last_reminder_sent_at = NULL, reminder_count = 0 
+                WHERE id = ?
+            ");
             $stmtUpd->bind_param("si", $bestEng, $visit_id);
             $stmtUpd->execute();
 
@@ -198,8 +533,11 @@ function checkAndApply48HourReassignment($conn) {
 
             logAmcAudit($conn, $contract_id, $visit_id, '48h Auto-Reassign', 'System Cron', 'System', "Reassigned from {$currentEng} to {$bestEng} due to 48 hours of inactivity");
 
-            // Email notifications
-            $subject = "AMC Visit Reassignment Alert - Visit #{$visit['visit_number']} ({$visit['amc_number']})";
+            // Send assignment email to the NEW engineer
+            sendAmcEngineerAssignmentEmail($conn, $visit_id, true);
+
+            // Send notification email to previous engineer and admin
+            $subject = "AMC Visit Auto-Reassigned (48h Inactivity) - Visit #{$visit['visit_number']} ({$visit['amc_number']})";
             $headers = "MIME-Version: 1.0\r\nContent-type:text/html;charset=UTF-8\r\nFrom: Infinity Computer <noreply@infinitycomputer.in>\r\n";
             $msg = "
             <html>
@@ -207,12 +545,14 @@ function checkAndApply48HourReassignment($conn) {
                 <div style='max-width:600px; padding:20px; border:1px solid #3b82f6; border-top:5px solid #3b82f6; border-radius:8px;'>
                     <h2 style='color:#1d4ed8;'>🔄 AMC Visit Reassigned</h2>
                     <p>Engineer <strong>{$currentEng}</strong> had no activity for {$hoursConfig} hours.</p>
-                    <p>Visit <strong>#{$visit['visit_number']}</strong> for <strong>{$visit['amc_number']} ({$visit['customer_name']})</strong> has been reassigned to <strong>{$bestEng}</strong>.</p>
+                    <p>Visit <strong>#{$visit['visit_number']}</strong> for <strong>{$visit['amc_number']} ({$visit['customer_name']})</strong> has been automatically reassigned to <strong>{$bestEng}</strong>.</p>
                     <p>Customer Address: {$visit['customer_address']}</p>
                 </div>
             </body>
             </html>
             ";
+            $prevEmail = getEngineerEmailByName($conn, $currentEng);
+            if (!empty($prevEmail)) @mail($prevEmail, $subject, $msg, $headers);
             @mail('icc@infinitycomputer.in', $subject, $msg, $headers);
             @mail('suraj@staff.infinitycomputer.in', $subject, $msg, $headers);
 
@@ -220,8 +560,9 @@ function checkAndApply48HourReassignment($conn) {
 
         } elseif ($escalationLevel >= 1) {
             // STEP 2: Reassigned engineer also inactive for another 48 hours -> ESCALATE TO ADMIN
-            $stmtEsc = $conn->prepare("UPDATE amc_visits SET status = 'OVERDUE', escalation_level = 2, last_activity_timestamp = NOW() WHERE id = ?");
-            $stmtEsc->bind_param("i", $visit_id);
+            $adminEng = 'icc';
+            $stmtEsc = $conn->prepare("UPDATE amc_visits SET assigned_engineer = ?, status = 'OVERDUE', escalation_level = 2, last_activity_timestamp = NOW() WHERE id = ?");
+            $stmtEsc->bind_param("si", $adminEng, $visit_id);
             $stmtEsc->execute();
 
             $conn->query("UPDATE amc_assignments SET status = 'Escalated' WHERE visit_id = {$visit_id} AND status = 'Active'");
@@ -236,10 +577,11 @@ function checkAndApply48HourReassignment($conn) {
             <body style='font-family:Arial,sans-serif;'>
                 <div style='max-width:600px; padding:20px; border:1px solid #ef4444; border-top:5px solid #ef4444; border-radius:8px;'>
                     <h2 style='color:#b91c1c;'>⚠️ Urgent AMC Admin Escalation</h2>
-                    <p>AMC Visit <strong>#{$visit['visit_number']}</strong> for contract <strong>{$visit['amc_number']} ({$visit['customer_name']})</strong> has failed multiple assignments with no activity for over {$hoursConfig} hours.</p>
-                    <p><strong>Assigned Engineer:</strong> {$currentEng}</p>
+                    <p>AMC Visit <strong>#{$visit['visit_number']}</strong> for contract <strong>{$visit['amc_number']} ({$visit['customer_name']})</strong> has failed multiple engineer assignments with no activity for over {$hoursConfig} hours.</p>
+                    <p><strong>Last Assigned Engineer:</strong> {$currentEng}</p>
                     <p><strong>Scheduled Date:</strong> {$visit['scheduled_date']}</p>
-                    <p>Please open AMC Management in the Admin Panel to manually assign an engineer or resolve.</p>
+                    <p><strong>Customer Address:</strong> {$visit['customer_address']}</p>
+                    <p>The visit is now assigned to <strong>Admin</strong>. Please open AMC Management in the Admin Panel to manually assign an engineer or complete the visit.</p>
                 </div>
             </body>
             </html>

@@ -488,15 +488,11 @@ try {
         exit;
     }
 
-    // ===== ADMIN: MANUAL REASSIGN ENGINEER =====
-    if ($action === 'reassign') {
-        if (!$isAdmin) {
-            echo json_encode(['status' => 'error', 'message' => 'Only Admin can reassign engineers.']);
-            exit;
-        }
-
+    // ===== MANUAL / ENGINEER REASSIGNMENT =====
+    if ($action === 'reassign' || $action === 'self_reassign') {
         $visit_id = intval($_POST['visit_id'] ?? 0);
         $new_engineer = trim($_POST['new_engineer'] ?? '');
+        $reassign_reason = trim($_POST['reason'] ?? 'Reassigned by staff');
 
         if (empty($new_engineer)) {
             echo json_encode(['status' => 'error', 'message' => 'New engineer name required.']);
@@ -512,8 +508,20 @@ try {
         $old_engineer = $vRow['assigned_engineer'];
         $contract_id = $vRow['contract_id'];
 
-        // Update visit assignment
-        $stmt = $conn->prepare("UPDATE amc_visits SET assigned_engineer = ?, status = 'ASSIGNED', assignment_timestamp = NOW(), last_activity_timestamp = NOW() WHERE id = ?");
+        // Access Check: Admin or currently assigned engineer can reassign
+        if (!$isAdmin && $old_engineer !== $staffName) {
+            echo json_encode(['status' => 'error', 'message' => 'Unauthorized to reassign this visit.']);
+            exit;
+        }
+
+        // Update visit assignment and reset notification state
+        $stmt = $conn->prepare("
+            UPDATE amc_visits 
+            SET assigned_engineer = ?, status = 'ASSIGNED', assignment_timestamp = NOW(), 
+                last_activity_timestamp = NOW(), scheduled_day_email_sent = 0, 
+                last_reminder_sent_at = NULL, reminder_count = 0 
+            WHERE id = ?
+        ");
         $stmt->bind_param("si", $new_engineer, $visit_id);
         $stmt->execute();
 
@@ -521,13 +529,16 @@ try {
         $conn->query("UPDATE amc_assignments SET status = 'Reassigned', expired_at = NOW() WHERE visit_id = {$visit_id} AND status = 'Active'");
 
         // Record new assignment in audit log
-        $stmtAss = $conn->prepare("INSERT INTO amc_assignments (visit_id, contract_id, engineer_name, previous_engineer, assigned_by, assignment_reason, status) VALUES (?, ?, ?, ?, ?, 'Admin Manual Reassignment', 'Active')");
-        $stmtAss->bind_param("iisss", $visit_id, $contract_id, $new_engineer, $old_engineer, $staffName);
+        $stmtAss = $conn->prepare("INSERT INTO amc_assignments (visit_id, contract_id, engineer_name, previous_engineer, assigned_by, assignment_reason, status) VALUES (?, ?, ?, ?, ?, ?, 'Active')");
+        $stmtAss->bind_param("iissss", $visit_id, $contract_id, $new_engineer, $old_engineer, $staffName, $reassign_reason);
         $stmtAss->execute();
 
-        logAmcAudit($conn, $contract_id, $visit_id, 'Manual Reassign', $staffName, $staffRole, "Reassigned visit #{$visit_id} from {$old_engineer} to {$new_engineer}");
+        logAmcAudit($conn, $contract_id, $visit_id, 'Visit Reassigned', $staffName, $staffRole, "Reassigned visit #{$visit_id} from {$old_engineer} to {$new_engineer} ({$reassign_reason})");
 
-        echo json_encode(['status' => 'success', 'message' => "Visit reassigned to {$new_engineer} successfully."]);
+        // Send email to the newly assigned engineer
+        sendAmcEngineerAssignmentEmail($conn, $visit_id, true);
+
+        echo json_encode(['status' => 'success', 'message' => "Visit reassigned to {$new_engineer} successfully and notification email sent."]);
         exit;
     }
 

@@ -13,14 +13,17 @@ require_once __DIR__ . '/amc_helper.php';
 header('Content-Type: application/json');
 
 try {
+    $emailStats = processAmcScheduledDayAndReminderEmails($conn);
     $result = checkAndApply48HourReassignment($conn);
     
     echo json_encode([
         'status' => 'success',
         'timestamp' => date('Y-m-d H:i:s'),
-        'reassigned_visits' => $result['reassigned'],
-        'escalated_visits' => $result['escalated'],
-        'message' => 'Processed 48-hour AMC inactivity checks successfully.'
+        'scheduled_day_emails_sent' => $emailStats['scheduled_emails_sent'] ?? 0,
+        'periodic_reminder_emails_sent' => $emailStats['reminder_emails_sent'] ?? 0,
+        'reassigned_visits' => $result['reassigned'] ?? 0,
+        'escalated_visits' => $result['escalated'] ?? 0,
+        'message' => 'Processed AMC notifications and 48-hour inactivity checks successfully.'
     ]);
 } catch (Exception $e) {
     echo json_encode([
