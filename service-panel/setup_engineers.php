@@ -13,11 +13,20 @@ CREATE TABLE IF NOT EXISTS engineers (
 );
 ";
 
-if ($conn->query($createTableQuery) === TRUE) {
-    echo "Table 'engineers' created or already exists.\n<br>";
-} else {
-    die("Error creating table: " . $conn->error . "\n");
+function addColumnIfNotExistsSetup($conn, $table, $column, $definition) {
+    $res = $conn->query("SHOW COLUMNS FROM `$table` LIKE '$column'");
+    if ($res && $res->num_rows == 0) {
+        $sql = "ALTER TABLE `$table` ADD COLUMN `$column` $definition";
+        $conn->query($sql);
+    }
 }
+
+addColumnIfNotExistsSetup($conn, 'engineers', 'position', "VARCHAR(50) DEFAULT 'staff'");
+addColumnIfNotExistsSetup($conn, 'engineers', 'role', "ENUM('Super Admin', 'Admin/Accounts', 'Engineer') DEFAULT 'Engineer'");
+addColumnIfNotExistsSetup($conn, 'engineers', 'status', "ENUM('Active', 'On Call', 'In Transit', 'On Job', 'On Hold', 'Off Duty') DEFAULT 'Active'");
+addColumnIfNotExistsSetup($conn, 'engineers', 'current_ticket', "VARCHAR(50) DEFAULT NULL");
+addColumnIfNotExistsSetup($conn, 'engineers', 'phone', "VARCHAR(20) DEFAULT NULL");
+addColumnIfNotExistsSetup($conn, 'engineers', 'last_activity_at', "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
 $initialEngineers = ['Suraj', 'Akshar', 'Karan', 'Rahul', 'Paresh', 'Om', 'Jatin'];
 

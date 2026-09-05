@@ -31,18 +31,49 @@ function generateAmcNumber($conn) {
  */
 function getActiveEngineers($conn) {
     $engineers = [];
-    $query = "SELECT id, name, email, position, status FROM engineers WHERE (status IS NULL OR status != 'Off Duty') ORDER BY name ASC";
-    $res = $conn->query($query);
-    if ($res && $res->num_rows > 0) {
-        while ($row = $res->fetch_assoc()) {
-            if ($row['name'] !== 'icc') { // Exclude super admin from auto round-robin unless assigned manually
-                $engineers[] = $row;
+
+    // Self-healing: Ensure status column exists in engineers table to prevent uncaught exceptions
+    try {
+        $checkCol = $conn->query("SHOW COLUMNS FROM `engineers` LIKE 'status'");
+        if ($checkCol && $checkCol->num_rows == 0) {
+            @$conn->query("ALTER TABLE `engineers` ADD COLUMN `status` ENUM('Active', 'On Call', 'In Transit', 'On Job', 'On Hold', 'Off Duty') DEFAULT 'Active'");
+        }
+    } catch (\Throwable $e) {
+        // Silently ignore schema modification error
+    }
+
+    try {
+        $query = "SELECT id, name, email, position, status FROM engineers WHERE (status IS NULL OR status != 'Off Duty') ORDER BY name ASC";
+        $res = $conn->query($query);
+        if ($res && $res->num_rows > 0) {
+            while ($row = $res->fetch_assoc()) {
+                if ($row['name'] !== 'icc') { // Exclude super admin from auto round-robin unless assigned manually
+                    $engineers[] = $row;
+                }
             }
         }
-    } else {
+    } catch (\Throwable $e) {
+        // Fallback query if status column fails or is not accessible
+        try {
+            $fallbackQuery = "SELECT id, name, email, position FROM engineers ORDER BY name ASC";
+            $res = $conn->query($fallbackQuery);
+            if ($res && $res->num_rows > 0) {
+                while ($row = $res->fetch_assoc()) {
+                    if ($row['name'] !== 'icc') {
+                        $row['status'] = 'Active';
+                        $engineers[] = $row;
+                    }
+                }
+            }
+        } catch (\Throwable $e2) {
+            // Ignore, proceed to array fallback below
+        }
+    }
+
+    if (empty($engineers)) {
         $fallback = ['Suraj', 'Akshar', 'Karan', 'Rahul', 'Paresh'];
         foreach ($fallback as $name) {
-            $engineers[] = ['name' => $name, 'email' => '', 'position' => 'staff'];
+            $engineers[] = ['name' => $name, 'email' => '', 'position' => 'staff', 'status' => 'Active'];
         }
     }
     return $engineers;

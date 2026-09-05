@@ -47,6 +47,10 @@ try {
         exit;
     }
 
+    // Ensure status column exists before updating
+    @$conn->query("ALTER TABLE `engineers` ADD COLUMN `status` ENUM('Active', 'On Call', 'In Transit', 'On Job', 'On Hold', 'Off Duty') DEFAULT 'Active'");
+    @$conn->query("ALTER TABLE `engineers` ADD COLUMN `last_activity_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
     // Update status
     $upd = $conn->prepare("UPDATE engineers SET status = ?, last_activity_at = NOW() WHERE name = ?");
     $upd->bind_param("ss", $status, $name);
@@ -57,7 +61,7 @@ try {
         'status' => 'success',
         'message' => "Status for engineer '{$name}' updated to '{$status}' successfully."
     ]);
-} catch (Exception $e) {
+} catch (\Throwable $e) {
     echo json_encode(['status' => 'error', 'message' => 'Failed to update status: ' . $e->getMessage()]);
 }
 ?>

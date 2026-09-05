@@ -13,7 +13,31 @@ header('Content-Type: application/json');
 
 require_once __DIR__ . '/../config/db.php';
 
+function addColumnIfNotExistsAmc($conn, $table, $column, $definition) {
+    $res = $conn->query("SHOW COLUMNS FROM `$table` LIKE '$column'");
+    if ($res && $res->num_rows == 0) {
+        $sql = "ALTER TABLE `$table` ADD COLUMN `$column` $definition";
+        $conn->query($sql);
+    }
+}
+
 try {
+    // 0. Ensure base engineers table and columns exist
+    $conn->query("CREATE TABLE IF NOT EXISTS engineers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE,
+        email VARCHAR(150) DEFAULT NULL,
+        position VARCHAR(50) DEFAULT 'staff',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    addColumnIfNotExistsAmc($conn, 'engineers', 'position', "VARCHAR(50) DEFAULT 'staff'");
+    addColumnIfNotExistsAmc($conn, 'engineers', 'role', "ENUM('Super Admin', 'Admin/Accounts', 'Engineer') DEFAULT 'Engineer'");
+    addColumnIfNotExistsAmc($conn, 'engineers', 'status', "ENUM('Active', 'On Call', 'In Transit', 'On Job', 'On Hold', 'Off Duty') DEFAULT 'Active'");
+    addColumnIfNotExistsAmc($conn, 'engineers', 'current_ticket', "VARCHAR(50) DEFAULT NULL");
+    addColumnIfNotExistsAmc($conn, 'engineers', 'phone', "VARCHAR(20) DEFAULT NULL");
+    addColumnIfNotExistsAmc($conn, 'engineers', 'last_activity_at', "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
     // 1. Dynamic AMC Product Types Table
     $conn->query("CREATE TABLE IF NOT EXISTS amc_products (
         id INT AUTO_INCREMENT PRIMARY KEY,
