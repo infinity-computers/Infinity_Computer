@@ -21,6 +21,7 @@ if ($engResult) {
     <title>Admin Dashboard - Staff Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css?v=2.1">
+    <link rel="stylesheet" href="assets/css/amc.css?v=1.0">
     <!-- Google reCAPTCHA -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
@@ -235,6 +236,7 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
     <div class="container">
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('main-workflow')">Active Jobs</button>
+            <button class="tab-btn" onclick="switchTab('amc-assignments-tab'); loadMyAmcAssignments();">My AMC Assignments</button>
             <button class="tab-btn" onclick="switchTab('user-requests')">User Requests</button>
             <button class="tab-btn" onclick="switchTab('home-services')">Home Services</button>
             <?php if (isSuperAdmin()): ?>
@@ -332,6 +334,34 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+
+        <!-- AMC ASSIGNMENTS TAB -->
+        <div id="amc-assignments-tab" class="tab-pane">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+                <h2 style="font-size:1.5rem; margin:0;">My AMC Visit Assignments</h2>
+                <button class="btn btn-secondary" onclick="loadMyAmcAssignments()" style="padding:8px 16px;">🔄 Refresh AMC Visits</button>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>AMC #</th>
+                            <th>Visit #</th>
+                            <th>Customer &amp; Location</th>
+                            <th>Products Covered</th>
+                            <th>Scheduled Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="myAmcVisitsTableBody">
+                        <tr>
+                            <td colspan="7" class="text-center" style="padding:40px; color:#6c757d;">Loading assigned AMC visits...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -1170,7 +1200,55 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
                 tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Failed to load activity logs.</td></tr>';
             }
         }
+
+        async function loadMyAmcAssignments() {
+            const tbody = document.getElementById('myAmcVisitsTableBody');
+            if (!tbody) return;
+            try {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding:20px; color:#6c757d;">Loading your AMC visits...</td></tr>';
+                const res = await fetch('api/amc_visits_api.php?action=list&mine_only=1');
+                const json = await res.json();
+                tbody.innerHTML = '';
+                if (!json.data || json.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding:30px; color:#6c757d;">No AMC visits currently assigned to you.</td></tr>';
+                    return;
+                }
+                json.data.forEach(v => {
+                    const tr = document.createElement('tr');
+                    const statusBadge = window.AMC ? window.AMC.getStatusBadgeClass(v.status) : 'badge';
+                    tr.innerHTML = `
+                        <td><strong style="color:var(--primary-dark);">${v.amc_number}</strong></td>
+                        <td><strong>Visit #${v.visit_number}</strong></td>
+                        <td>
+                            <div style="font-weight:700;">${v.customer_name} ${v.company_name ? '(' + v.company_name + ')' : ''}</div>
+                            <div style="font-size:0.85rem; color:#64748b;">📍 ${v.customer_address}</div>
+                            <div style="font-size:0.85rem; color:#3b82f6;">📞 ${v.customer_phone}</div>
+                        </td>
+                        <td style="font-size:0.9rem;">${v.products_covered || 'N/A'}</td>
+                        <td><strong>${v.scheduled_date}</strong></td>
+                        <td><span class="${statusBadge}">${v.status}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="window.AMC.openVisitModal(${v.id})" style="padding:6px 14px; font-weight:600;">Start / Process Visit</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Failed to load AMC assignments.</td></tr>';
+            }
+        }
     </script>
+
+    <!-- AMC VISIT WORKFLOW MODAL -->
+    <div id="amc-visit-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.7); z-index:99999; justify-content:center; align-items:center; overflow-y:auto; padding:20px;">
+        <div style="background:#fff; width:100%; max-width:900px; max-height:90vh; border-radius:16px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.2); overflow-y:auto; padding:30px; position:relative; margin:auto;">
+            <button onclick="window.AMC.closeVisitModal()" style="position:absolute; top:15px; right:20px; background:none; border:none; font-size:2rem; font-weight:700; cursor:pointer; color:#64748b; line-height:1;">&times;</button>
+            <div id="amc-visit-modal-content"></div>
+        </div>
+    </div>
+
+    <!-- AMC Workflow Engine JS -->
+    <script src="assets/js/amc-workflow.js?v=1.0"></script>
 </body>
 
 </html>

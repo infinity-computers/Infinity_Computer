@@ -122,3 +122,136 @@ function processAndSaveImage($file, $target_dir, $watermark_text = "Infinity Com
 
     return $filename;
 }
+
+/**
+ * AMC Specialized Image Helper
+ * Bakes watermark ("INFINITY COMPUTER"), Date, Time, Latitude, and Longitude into bottom overlay
+ */
+function processAndSaveAmcImage($file, $target_dir, $lat = null, $lng = null, $watermark_text = "INFINITY COMPUTER") {
+    if (!isset($file) || $file['error'] !== 0) {
+        return null;
+    }
+
+    $type = mime_content_type($file['tmp_name']);
+    if ($type !== 'image/jpeg' && $type !== 'image/png') {
+        return null;
+    }
+
+    if (!is_dir($target_dir)) {
+        mkdir($target_dir, 0777, true);
+    }
+
+    $filename = 'amc_' . time() . '_' . rand(1000, 9999) . '.jpg';
+    $target_file = $target_dir . $filename;
+    $source = $file['tmp_name'];
+
+    if (!function_exists('imagecreatefromjpeg')) {
+        move_uploaded_file($source, $target_file);
+        return $filename;
+    }
+
+    $image = ($type === 'image/png') ? @imagecreatefrompng($source) : @imagecreatefromjpeg($source);
+    if (!$image) {
+        move_uploaded_file($source, $target_file);
+        return $filename;
+    }
+
+    $width = imagesx($image);
+    $height = imagesy($image);
+
+    $max_dim = 2000;
+    if ($width > $max_dim || $height > $max_dim) {
+        $ratio = min($max_dim / $width, $max_dim / $height);
+        $new_w = floor($width * $ratio);
+        $new_h = floor($height * $ratio);
+        $tmp = imagecreatetruecolor($new_w, $new_h);
+        imagecopyresampled($tmp, $image, 0, 0, 0, 0, $new_w, $new_h, $width, $height);
+        imagedestroy($image);
+        $image = $tmp;
+        $width = $new_w;
+        $height = $new_h;
+    }
+
+    $font_path = __DIR__ . '/arial.ttf';
+    if (!file_exists($font_path)) {
+        $font_path = 'C:/Windows/Fonts/arial.ttf';
+    }
+    if (!file_exists($font_path)) {
+        $font_path = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
+    }
+
+    $use_ttf = file_exists($font_path) && function_exists('imagettftext');
+
+    // 1. Watermark Diagonal Text Overlay
+    $text = strtolower($watermark_text);
+    if ($use_ttf) {
+        $fsize = max(10, $width / 45);
+        $angle = 45;
+        $white_visible = imagecolorallocatealpha($image, 255, 255, 255, 38);
+        $step_x = $fsize * 8;
+        $step_y = $fsize * 4;
+        $range = max($width, $height) * 1.5;
+
+        for ($y = -$range; $y < $range * 2; $y += $step_y) {
+            $row_index = floor($y / $step_y);
+            $shift = ($row_index % 2) * ($step_x / 2);
+            for ($x = -$range; $x < $range * 2; $x += $step_x) {
+                imagettftext($image, $fsize * 0.7, $angle, $x + $shift, $y, $white_visible, $font_path, $text);
+            }
+        }
+    }
+
+    // 2. Bottom AMC Overlay Banner with INFINITY COMPUTER, Date, Time, Lat & Lng
+    $date_str = date("d/m/Y");
+    $time_str = date("h:i:s A");
+    $lat_str = (!empty($lat) && is_numeric($lat)) ? sprintf("%.6f", floatval($lat)) : "Location unavailable";
+    $lng_str = (!empty($lng) && is_numeric($lng)) ? sprintf("%.6f", floatval($lng)) : "Location unavailable";
+
+    $lines = [
+        strtoupper($watermark_text),
+        "Date: " . $date_str,
+        "Time: " . $time_str,
+        "Latitude: " . $lat_str,
+        "Longitude: " . $lng_str
+    ];
+
+    $black_bg = imagecolorallocatealpha($image, 0, 0, 0, 45); // ~65% opacity black
+    $white_text = imagecolorallocate($image, 255, 255, 255);
+    $yellow_accent = imagecolorallocate($image, 253, 224, 71); // Accent for INFINITY COMPUTER
+
+    if ($use_ttf) {
+        $font_size = max(12, floor($width / 50));
+        $line_height = floor($font_size * 1.45);
+        $padding = floor($font_size * 0.8);
+        $box_height = ($line_height * count($lines)) + ($padding * 2);
+
+        // Draw solid dark background strip at bottom
+        imagefilledrectangle($image, 0, $height - $box_height, $width, $height, $black_bg);
+
+        $start_y = $height - $box_height + $padding + $font_size;
+        foreach ($lines as $idx => $line_content) {
+            $curr_y = $start_y + ($idx * $line_height);
+            $color = ($idx === 0) ? $yellow_accent : $white_text;
+            imagettftext($image, $font_size, 0, $padding * 1.5, $curr_y, $color, $font_path, $line_content);
+        }
+    } else {
+        $font_idx = 4;
+        $line_height = 18;
+        $padding = 10;
+        $box_height = ($line_height * count($lines)) + ($padding * 2);
+
+        imagefilledrectangle($image, 0, $height - $box_height, $width, $height, $black_bg);
+
+        $start_y = $height - $box_height + $padding;
+        foreach ($lines as $idx => $line_content) {
+            $curr_y = $start_y + ($idx * $line_height);
+            imagestring($image, $font_idx, $padding, $curr_y, $line_content, $white_text);
+        }
+    }
+
+    imagejpeg($image, $target_file, 85);
+    imagedestroy($image);
+
+    return $filename;
+}
+

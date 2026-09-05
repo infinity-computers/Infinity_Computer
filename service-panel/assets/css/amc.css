@@ -1,0 +1,237 @@
+/* Infinity Computer - AMC Management System Styles */
+
+:root {
+    --amc-primary: #1f5fae;
+    --amc-primary-dark: #16437e;
+    --amc-success: #10b981;
+    --amc-warning: #f59e0b;
+    --amc-danger: #ef4444;
+    --amc-info: #06b6d4;
+    --amc-bg-light: #f8fafc;
+}
+
+/* AMC Stat Cards */
+.amc-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.amc-stat-card {
+    background: #fff;
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    border-left: 5px solid var(--amc-primary);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.amc-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.06);
+}
+
+.amc-stat-card .label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.amc-stat-card .val {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 4px;
+}
+
+/* Status Badges */
+.badge-amc {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.badge-assigned {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.badge-accepted {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.badge-reached {
+    background: #cff4fc;
+    color: #055160;
+}
+
+.badge-inspection {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-followup {
+    background: #ffedd5;
+    color: #9a3412;
+}
+
+.badge-completed {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.badge-overdue {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.badge-cancelled {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+/* Workflow Stepper */
+.amc-stepper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    margin: 20px 0 30px;
+    padding: 0 10px;
+}
+
+.amc-stepper::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 40px;
+    right: 40px;
+    height: 3px;
+    background: #e2e8f0;
+    z-index: 1;
+}
+
+.amc-step-item {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    flex: 1;
+}
+
+.amc-step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 6px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #64748b;
+    transition: all 0.3s ease;
+}
+
+.amc-step-item.active .amc-step-circle {
+    border-color: var(--amc-primary);
+    background: var(--amc-primary);
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(31, 95, 174, 0.2);
+}
+
+.amc-step-item.done .amc-step-circle {
+    border-color: var(--amc-success);
+    background: var(--amc-success);
+    color: #fff;
+}
+
+.amc-step-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+}
+
+.amc-step-item.active .amc-step-label,
+.amc-step-item.done .amc-step-label {
+    color: #0f172a;
+}
+
+/* Previous Maintenance Card */
+.prev-maint-card {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.prev-maint-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--amc-primary-dark);
+}
+
+.prev-maint-content {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #cbd5e1;
+}
+
+/* GPS Coordinates Box */
+.gps-box {
+    background: #ecfeff;
+    border: 1px solid #a5f3fc;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    color: #0891b2;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 768px) {
+    .amc-stepper {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+        margin-left: 10px;
+    }
+
+    .amc-stepper::before {
+        top: 20px;
+        bottom: 20px;
+        left: 20px;
+        width: 3px;
+        height: auto;
+    }
+
+    .amc-step-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        text-align: left;
+        width: 100%;
+    }
+
+    .amc-step-circle {
+        margin: 0;
+    }
+}

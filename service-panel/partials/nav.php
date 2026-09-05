@@ -33,6 +33,7 @@ $billingDropdownActive = in_array($activeNav, ['billing', 'reports']);
             <li><a href="dashboard.php" <?= $activeNav === 'dashboard' ? 'class="header-active"' : '' ?>>Dashboard</a></li>
 
             <?php if ($isAdmin): ?>
+            <li><a href="amc.php" <?= $activeNav === 'amc' ? 'class="header-active"' : '' ?>>AMC Management</a></li>
             <li><a href="crm.php" <?= $activeNav === 'crm' ? 'class="header-active"' : '' ?>>CRM Analytics</a></li>
 
             <!-- Billing & Reports dropdown -->
