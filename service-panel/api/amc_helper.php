@@ -31,14 +31,18 @@ function generateAmcNumber($conn) {
  */
 function getActiveEngineers($conn) {
     $engineers = [];
-    $query = "SELECT name, email, phone FROM engineers WHERE is_active = 1 AND (status IS NULL OR status != 'Off Duty') ORDER BY name ASC";
+    $query = "SELECT id, name, email, position, status FROM engineers WHERE (status IS NULL OR status != 'Off Duty') ORDER BY name ASC";
     $res = $conn->query($query);
-    if ($res) {
+    if ($res && $res->num_rows > 0) {
         while ($row = $res->fetch_assoc()) {
-            // Only consider operational engineers or staff
             if ($row['name'] !== 'icc') { // Exclude super admin from auto round-robin unless assigned manually
                 $engineers[] = $row;
             }
+        }
+    } else {
+        $fallback = ['Suraj', 'Akshar', 'Karan', 'Rahul', 'Paresh'];
+        foreach ($fallback as $name) {
+            $engineers[] = ['name' => $name, 'email' => '', 'position' => 'staff'];
         }
     }
     return $engineers;

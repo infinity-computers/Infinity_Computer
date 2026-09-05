@@ -22,7 +22,7 @@ if (!$isAdmin) {
 checkAndApply48HourReassignment($conn);
 
 // Fetch Engineers List for assignment dropdowns
-$engRes = $conn->query("SELECT name FROM engineers WHERE is_active = 1 ORDER BY name ASC");
+$engRes = $conn->query("SELECT name FROM engineers ORDER BY name ASC");
 $engineersList = [];
 if ($engRes) {
     while ($eRow = $engRes->fetch_assoc()) {
