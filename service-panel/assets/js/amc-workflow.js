@@ -314,6 +314,9 @@ window.AMC = {
                                 <button type="button" class="btn btn-primary" onclick="window.AMC.triggerCamera('arrival_photo_input')" style="display:inline-flex; align-items:center; gap:6px; font-weight:600;">
                                     📷 Take Photo with Camera
                                 </button>
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('arrival_photo_input').click();" style="display:inline-flex; align-items:center; gap:6px; font-weight:600;">
+                                    📁 Open Camera Directly
+                                </button>
                                 <label class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; cursor:pointer; margin:0; font-weight:600;">
                                     📁 Select Photo
                                     <input type="file" id="arrival_photo_input" name="arrival_photo" accept="image/*" capture="environment" style="display:none;" onchange="window.AMC.handlePhotoSelect(this, 'arrival_preview')">
@@ -373,6 +376,9 @@ window.AMC = {
                             <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
                                 <button type="button" class="btn btn-primary" onclick="window.AMC.triggerCamera('inspection_photo_input')" style="display:inline-flex; align-items:center; gap:6px;">
                                     📷 Take Photo with Camera
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('inspection_photo_input').click();" style="display:inline-flex; align-items:center; gap:6px; font-weight:600;">
+                                    📁 Open Camera Directly
                                 </button>
                                 <label class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; cursor:pointer; margin:0;">
                                     📁 Select Photo
@@ -501,6 +507,9 @@ window.AMC = {
                                     <button type="button" class="btn btn-success" onclick="window.AMC.triggerCamera('after_service_photo_input')" style="display:inline-flex; align-items:center; gap:6px;">
                                         📷 Take Photo with Camera
                                     </button>
+                                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('after_service_photo_input').click();" style="display:inline-flex; align-items:center; gap:6px; font-weight:600;">
+                                        📁 Open Camera Directly
+                                    </button>
                                     <label class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; cursor:pointer; margin:0;">
                                         📁 Select Photo
                                         <input type="file" id="after_service_photo_input" name="after_service_photo" accept="image/*" capture="environment" style="display:none;" onchange="window.AMC.handlePhotoSelect(this, 'after_service_preview')">
@@ -521,7 +530,13 @@ window.AMC = {
                                     <button type="button" class="btn btn-success" onclick="window.AMC.triggerCamera('departure_photo_input')" style="display:inline-flex; align-items:center; gap:6px;">
                                         📷 Take Photo with Camera
                                     </button>
+                                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('departure_photo_input').click();" style="display:inline-flex; align-items:center; gap:6px; font-weight:600;">
+                                        📁 Open Camera Directly
+                                    </button>
                                     <label class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; cursor:pointer; margin:0;">
+                                        📁 Select Photo
+                                        <input type="file" id="departure_photo_input" name="departure_photo" accept="image/*" capture="environment" style="display:none;" onchange="window.AMC.handlePhotoSelect(this, 'departure_preview')">
+                                    </label>
                                         📁 Select Photo
                                         <input type="file" id="departure_photo_input" name="departure_photo" accept="image/*" capture="environment" style="display:none;" onchange="window.AMC.handlePhotoSelect(this, 'departure_preview')">
                                     </label>
