@@ -44,7 +44,7 @@ const ImageProcessor = {
 
                     // 1. Watermark (Opaque Text Only Pattern)
                     ctx.save();
-                    const fsize = Math.max(12, canvas.width / 45);
+                    const fsize = Math.max(14, (canvas.width / 45) * 1.20);
                     ctx.textAlign = "center";
                     ctx.fillStyle = "rgba(255, 255, 255, 0.7)"; // Opaque/Very visible (70% opacity)
                     ctx.font = `600 ${fsize * 0.7}px sans-serif`;
@@ -68,7 +68,7 @@ const ImageProcessor = {
 
                     // 2. Timestamp (Bottom-Right)
                     const timestamp = new Date().toLocaleString('sv-SE').replace('T', ' ');
-                    const tsSize = Math.max(20, canvas.width / 30); // Increased Size
+                    const tsSize = Math.max(24, (canvas.width / 30) * 1.20); // 20% Increased Size
                     ctx.font = `bold ${tsSize}px Arial`;
                     ctx.textAlign = "right";
 
@@ -150,7 +150,7 @@ const ImageProcessor = {
                     item.innerHTML = `
                         <div style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:8px; box-sizing:border-box;">
                             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                            <span style="font-size:0.65rem; color:#15803d; font-weight:600; text-align:center;">Photo ${index+1}<br>${sizeKB} KB</span>
+                            <span style="font-size:0.65rem; color:#15803d; font-weight:600; text-align:center;">Photo ${index + 1}<br>${sizeKB} KB</span>
                         </div>
                         <button type="button" data-index="${index}" style="position:absolute; top:4px; right:4px; background:rgba(220,38,38,0.85); color:#fff; border:none; border-radius:50%; width:22px; height:22px; font-size:14px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;" title="Remove">✕</button>
                     `;

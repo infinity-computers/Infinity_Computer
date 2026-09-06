@@ -26,7 +26,10 @@ $engRes = $conn->query("SELECT name FROM engineers ORDER BY name ASC");
 $engineersList = [];
 if ($engRes) {
     while ($eRow = $engRes->fetch_assoc()) {
-        if ($eRow['name'] !== 'icc') $engineersList[] = $eRow['name'];
+        $name = $eRow['name'] ?? '';
+        if ($name !== 'icc' && $name !== 'Nikhil' && $name !== 'Priyanka Patel') {
+            $engineersList[] = $name;
+        }
     }
 }
 if (empty($engineersList)) $engineersList = ['Suraj', 'Akshar', 'Karan', 'Rahul', 'Paresh'];

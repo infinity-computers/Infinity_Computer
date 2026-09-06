@@ -185,7 +185,7 @@ function processAndSaveAmcImage($file, $target_dir, $lat = null, $lng = null, $w
     // 1. Watermark Diagonal Text Overlay
     $text = strtolower($watermark_text);
     if ($use_ttf) {
-        $fsize = max(10, $width / 45);
+        $fsize = max(12, floor(($width / 45) * 1.20));
         $angle = 45;
         $white_visible = imagecolorallocatealpha($image, 255, 255, 255, 38);
         $step_x = $fsize * 8;
@@ -230,7 +230,7 @@ function processAndSaveAmcImage($file, $target_dir, $lat = null, $lng = null, $w
     $yellow_accent = imagecolorallocate($image, 253, 224, 71); // Accent for INFINITY COMPUTER
 
     if ($use_ttf) {
-        $font_size = max(12, floor($width / 50));
+        $font_size = max(15, floor(($width / 50) * 1.20));
         $line_height = floor($font_size * 1.45);
         $padding = floor($font_size * 0.8);
         $box_height = ($line_height * count($lines)) + ($padding * 2);

@@ -82,8 +82,18 @@ window.AMC = {
 
     setWizardStep: function (stepNum) {
         if (!this.currentVisit) return;
+        // Allow navigation only to the current active step or the next step if previous is completed
+        const allowedSteps = [this.activeStep];
+        if (stepNum === this.activeStep + 1) allowedSteps.push(stepNum);
+        if (!allowedSteps.includes(stepNum)) return; // ignore invalid navigation
         this.activeStep = stepNum;
         this.renderVisitWorkflow(this.currentVisit);
+    },
+
+    // Determine if maintenance step is required based on visit data (placeholder logic)
+    isMaintenanceRequired: function (visit) {
+        // Placeholder: assume a boolean field `requires_maintenance` exists
+        return !!visit.requires_maintenance;
     },
 
     triggerCamera: function (inputId) {
@@ -214,31 +224,16 @@ window.AMC = {
         }
 
         // ===== STEP-BY-STEP WORKFLOW STEPPER =====
+        // Build a 4‑step stepper (Accept → Reach → Inspection → Completion)
+        let stepperHtml = `<div class="amc-stepper`;
+        stepperHtml += `<div class="amc-step-item ${step1Done ? 'done' : ''} ${this.activeStep === 1 ? 'active' : ''}" onclick="window.AMC.setWizardStep(1)" style="cursor:pointer;" title="Step 1: Accept"><div class="amc-step-circle">1</div><div class="amc-step-label">Accept</div></div>`;
+        stepperHtml += `<div class="amc-step-item ${step2Done ? 'done' : ''} ${this.activeStep === 2 ? 'active' : ''}" onclick="window.AMC.setWizardStep(2)" style="cursor:pointer;" title="Step 2: Reach"><div class="amc-step-circle">2</div><div class="amc-step-label">Reach</div></div>`;
+        stepperHtml += `<div class="amc-step-item ${step3Done ? 'done' : ''} ${this.activeStep === 3 ? 'active' : ''}" onclick="window.AMC.setWizardStep(3)" style="cursor:pointer;" title="Step 3: Inspection"><div class="amc-step-circle">3</div><div class="amc-step-label">Inspection</div></div>`;
+        stepperHtml += `<div class="amc-step-item ${isCompleted ? 'done' : ''} ${this.activeStep === 4 ? 'active' : ''}" onclick="window.AMC.setWizardStep(4)" style="cursor:pointer;" title="Step 4: Completion"><div class="amc-step-circle">4</div><div class="amc-step-label">Complete</div></div>`;
+        stepperHtml += `</div>`;
+        html += stepperHtml;
+        // GPS Banner
         html += `
-            <div class="amc-stepper">
-                <div class="amc-step-item ${step1Done ? 'done' : ''} ${this.activeStep === 1 ? 'active' : ''}" onclick="window.AMC.setWizardStep(1)" style="cursor:pointer;" title="Step 1: Accept">
-                    <div class="amc-step-circle">1</div>
-                    <div class="amc-step-label">Accept</div>
-                </div>
-                <div class="amc-step-item ${step2Done ? 'done' : ''} ${this.activeStep === 2 ? 'active' : ''}" onclick="window.AMC.setWizardStep(2)" style="cursor:pointer;" title="Step 2: Reached">
-                    <div class="amc-step-circle">2</div>
-                    <div class="amc-step-label">Reached</div>
-                </div>
-                <div class="amc-step-item ${step3Done ? 'done' : ''} ${this.activeStep === 3 ? 'active' : ''}" onclick="window.AMC.setWizardStep(3)" style="cursor:pointer;" title="Step 3: Inspection">
-                    <div class="amc-step-circle">3</div>
-                    <div class="amc-step-label">Inspection</div>
-                </div>
-                <div class="amc-step-item ${step4Done ? 'done' : ''} ${this.activeStep === 4 ? 'active' : ''}" onclick="window.AMC.setWizardStep(4)" style="cursor:pointer;" title="Step 4: Maintenance (Optional)">
-                    <div class="amc-step-circle">4</div>
-                    <div class="amc-step-label">Maintenance *</div>
-                </div>
-                <div class="amc-step-item ${isCompleted ? 'done' : ''} ${this.activeStep === 5 ? 'active' : ''}" onclick="window.AMC.setWizardStep(5)" style="cursor:pointer;" title="Step 5: Completion">
-                    <div class="amc-step-circle">5</div>
-                    <div class="amc-step-label">Complete</div>
-                </div>
-            </div>
-
-            <!-- GPS Live Coordinates Banner -->
             <div class="gps-box" style="margin-bottom:20px;">
                 <span>🌐 GPS Coordinates:</span>
                 <span id="gpsDisplay">${this.gpsCoords.lat ? `${this.gpsCoords.lat}, ${this.gpsCoords.lng}` : 'Location unavailable'}</span>
@@ -246,21 +241,27 @@ window.AMC = {
             </div>
         `;
 
+
+
+        `;
+
         // ===== WIZARD STEP 1: ACCEPT ASSIGNMENT =====
         if (this.activeStep === 1) {
             html += `
-                <div style="text-align:center; padding:30px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; margin-bottom:20px;">
+            < div style = "text-align:center; padding:30px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; margin-bottom:20px;" >
                     <h4 style="color:#0369a1; margin-bottom:10px;">Step 1 of 5: Accept AMC Assignment</h4>
                     <p style="color:#0c4a6e; font-size:0.95rem; margin-bottom:20px;">Please confirm acceptance of this AMC visit assignment to begin customer visit workflow.</p>
-                    ${status === 'ASSIGNED' ? `
+                    ${
+            status === 'ASSIGNED' ? `
                         <button class="btn btn-primary" onclick="window.AMC.submitAccept(${visit.id})" style="padding:12px 30px; font-size:1.1rem; font-weight:700;">Accept Assignment &amp; Proceed to Step 2 ➔</button>
                     ` : `
                         <div style="color:#0284c7; font-weight:700; margin-bottom:15px;">✓ Assignment Accepted</div>
                         <button type="button" class="btn btn-secondary" onclick="window.AMC.setWizardStep(2)">Proceed to Step 2 (Reach Location) ➔</button>
                     `}
-                </div>
+                </div >
 
-                ${!isCompleted ? `
+            ${
+            !isCompleted ? `
                 <div style="background:#fff7ed; border:1px solid #ffedd5; border-radius:12px; padding:20px; text-align:center;">
                     <h5 style="color:#c2410c; margin-top:0; margin-bottom:8px;">⚠️ Unable to perform visit on scheduled date?</h5>
                     <p style="color:#9a3412; font-size:0.9rem; margin-bottom:15px;">If you cannot complete this AMC maintenance visit today, reassign it immediately to another engineer to prevent 48-hour inactivity escalation.</p>
@@ -292,14 +293,15 @@ window.AMC = {
                         </form>
                     </div>
                 </div>
-                ` : ''}
-            `;
+                ` : ''
+        }
+        `;
         }
 
         // ===== WIZARD STEP 2: REACH CUSTOMER LOCATION =====
         else if (this.activeStep === 2) {
             html += `
-                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:25px;">
+            < div style = "background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:25px;" >
                     <h4 style="color:var(--amc-primary-dark); margin-bottom:15px;">Step 2 of 5: Reach Customer Location</h4>
                     <form id="amcReachForm" onsubmit="window.AMC.submitReach(event, ${visit.id})">
                         <input type="hidden" name="latitude" value="${this.gpsCoords.lat}">
