@@ -393,9 +393,54 @@ function sendAmcPeriodicReminderEmail($conn, $visit_id) {
 }
 
 /**
+ * Ensure AMC schema columns exist in database (self-healing migration)
+ */
+function ensureAmcSchemaColumns($conn) {
+    static $checked = false;
+    if ($checked) return;
+    $checked = true;
+
+    try {
+        $colsToAdd = [
+            'amc_visits' => [
+                'scheduled_day_email_sent' => "TINYINT(1) DEFAULT 0",
+                'last_reminder_sent_at' => "TIMESTAMP NULL DEFAULT NULL",
+                'reminder_count' => "INT DEFAULT 0",
+                'escalation_level' => "INT DEFAULT 0",
+                'is_inactive_reassigned' => "TINYINT(1) DEFAULT 0",
+                'assignment_timestamp' => "TIMESTAMP NULL DEFAULT NULL",
+                'last_activity_timestamp' => "TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+            ],
+            'engineers' => [
+                'position' => "VARCHAR(50) DEFAULT 'staff'",
+                'role' => "ENUM('Super Admin', 'Admin/Accounts', 'Engineer') DEFAULT 'Engineer'",
+                'status' => "ENUM('Active', 'On Call', 'In Transit', 'On Job', 'On Hold', 'Off Duty') DEFAULT 'Active'",
+                'current_ticket' => "VARCHAR(50) DEFAULT NULL",
+                'phone' => "VARCHAR(20) DEFAULT NULL"
+            ]
+        ];
+
+        foreach ($colsToAdd as $table => $cols) {
+            $tCheck = $conn->query("SHOW TABLES LIKE '$table'");
+            if (!$tCheck || $tCheck->num_rows === 0) continue;
+
+            foreach ($cols as $col => $def) {
+                $cCheck = $conn->query("SHOW COLUMNS FROM `$table` LIKE '$col'");
+                if ($cCheck && $cCheck->num_rows === 0) {
+                    $conn->query("ALTER TABLE `$table` ADD COLUMN `$col` $def");
+                }
+            }
+        }
+    } catch (\Throwable $e) {
+        // Silently catch schema check issues
+    }
+}
+
+/**
  * Process Scheduled Day Notifications and Periodic Reminders
  */
 function processAmcScheduledDayAndReminderEmails($conn) {
+    ensureAmcSchemaColumns($conn);
     $todayStr = date('Y-m-d');
     $scheduledSent = 0;
     $remindersSent = 0;
@@ -453,6 +498,7 @@ function processAmcScheduledDayAndReminderEmails($conn) {
  * 48-Hour Automatic Inactivity Reassignment & Escalation System
  */
 function checkAndApply48HourReassignment($conn) {
+    ensureAmcSchemaColumns($conn);
     // Process scheduled day and periodic reminder emails first
     processAmcScheduledDayAndReminderEmails($conn);
 

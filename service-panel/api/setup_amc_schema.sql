@@ -83,6 +83,9 @@ CREATE TABLE IF NOT EXISTS `amc_visits` (
   `follow_up_notes` TEXT DEFAULT NULL,
   `escalation_level` INT DEFAULT 0,
   `is_inactive_reassigned` TINYINT(1) DEFAULT 0,
+  `scheduled_day_email_sent` TINYINT(1) DEFAULT 0,
+  `last_reminder_sent_at` TIMESTAMP NULL DEFAULT NULL,
+  `reminder_count` INT DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX(`contract_id`),
@@ -186,3 +189,9 @@ CREATE TABLE IF NOT EXISTS `amc_settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO `amc_settings` (`setting_key`, `setting_value`) VALUES ('reassignment_hours', '48');
+
+-- Migration for existing amc_visits tables
+ALTER TABLE `amc_visits` ADD COLUMN `scheduled_day_email_sent` TINYINT(1) DEFAULT 0;
+ALTER TABLE `amc_visits` ADD COLUMN `last_reminder_sent_at` TIMESTAMP NULL DEFAULT NULL;
+ALTER TABLE `amc_visits` ADD COLUMN `reminder_count` INT DEFAULT 0;
+
