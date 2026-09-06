@@ -34,6 +34,7 @@ function getActiveEngineers($conn) {
     try {
         $res = $conn->query("SELECT * FROM engineers ORDER BY name ASC");
         if ($res && $res->num_rows > 0) {
+            while ($row = $res->fetch_assoc()) {
                 $engName = $row['name'] ?? '';
                 if ($engName !== 'icc' && $engName !== 'Nikhil' && $engName !== 'Priyanka Patel') {
                     if (isset($row['status']) && $row['status'] === 'Off Duty') {
@@ -41,6 +42,7 @@ function getActiveEngineers($conn) {
                     }
                     $engineers[] = $row;
                 }
+            }
         }
     } catch (\Throwable $e) {
         // Silently ignore query issues
