@@ -57,14 +57,20 @@ function getActiveEngineers($conn) {
 }
 
 /**
- * Audit Log Helper
+ * Audit Log Helper (Safe NULL handling)
  */
 function logAmcAudit($conn, $contract_id, $visit_id, $action, $performed_by, $role = 'System', $details = '') {
-    $stmt = $conn->prepare("INSERT INTO amc_audit_logs (contract_id, visit_id, action, performed_by, role, details) VALUES (?, ?, ?, ?, ?, ?)");
-    $cid = $contract_id ? intval($contract_id) : null;
-    $vid = $visit_id ? intval($visit_id) : null;
-    $stmt->bind_param("iissss", $cid, $vid, $action, $performed_by, $role, $details);
-    $stmt->execute();
+    try {
+        $cid = !empty($contract_id) ? intval($contract_id) : 0;
+        $vid = !empty($visit_id) ? intval($visit_id) : 0;
+        $stmt = $conn->prepare("INSERT INTO amc_audit_logs (contract_id, visit_id, action, performed_by, role, details) VALUES (NULLIF(?, 0), NULLIF(?, 0), ?, ?, ?, ?)");
+        if ($stmt) {
+            $stmt->bind_param("iissss", $cid, $vid, $action, $performed_by, $role, $details);
+            $stmt->execute();
+        }
+    } catch (\Throwable $e) {
+        // Silently catch audit log issue so primary operation succeeds
+    }
 }
 
 /**
@@ -393,7 +399,7 @@ function sendAmcPeriodicReminderEmail($conn, $visit_id) {
 }
 
 /**
- * Ensure AMC schema columns exist in database (self-healing migration)
+ * Ensure AMC schema tables and columns exist in database (self-healing migration)
  */
 function ensureAmcSchemaColumns($conn) {
     static $checked = false;
@@ -401,6 +407,134 @@ function ensureAmcSchemaColumns($conn) {
     $checked = true;
 
     try {
+        // 1. Ensure base tables exist if missing
+        $conn->query("CREATE TABLE IF NOT EXISTS engineers (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100) NOT NULL UNIQUE,
+            email VARCHAR(150) DEFAULT NULL,
+            position VARCHAR(50) DEFAULT 'staff',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $conn->query("CREATE TABLE IF NOT EXISTS amc_products (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100) NOT NULL UNIQUE,
+            description TEXT DEFAULT NULL,
+            is_active TINYINT(1) DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $conn->query("CREATE TABLE IF NOT EXISTS amc_contracts (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            amc_number VARCHAR(50) NOT NULL UNIQUE,
+            customer_name VARCHAR(255) NOT NULL,
+            customer_phone VARCHAR(20) NOT NULL,
+            customer_email VARCHAR(255) DEFAULT NULL,
+            customer_address TEXT NOT NULL,
+            company_name VARCHAR(255) DEFAULT NULL,
+            start_date DATE NOT NULL,
+            end_date DATE NOT NULL,
+            visit_count INT NOT NULL DEFAULT 4,
+            visit_frequency VARCHAR(50) DEFAULT 'Quarterly',
+            status ENUM('Upcoming', 'Active', 'Completed', 'Expired', 'Suspended', 'Cancelled') DEFAULT 'Active',
+            assigned_engineers TEXT DEFAULT NULL,
+            remarks TEXT DEFAULT NULL,
+            created_by VARCHAR(100) DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX(amc_number),
+            INDEX(customer_phone),
+            INDEX(status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $conn->query("CREATE TABLE IF NOT EXISTS amc_contract_products (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            contract_id INT NOT NULL,
+            product_id INT DEFAULT NULL,
+            product_name VARCHAR(100) NOT NULL,
+            quantity INT DEFAULT 1,
+            serial_number VARCHAR(100) DEFAULT NULL,
+            location_details VARCHAR(255) DEFAULT NULL,
+            notes TEXT DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX(contract_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $conn->query("CREATE TABLE IF NOT EXISTS amc_visits (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            contract_id INT NOT NULL,
+            visit_number INT NOT NULL,
+            scheduled_date DATE NOT NULL,
+            due_date DATE DEFAULT NULL,
+            assigned_engineer VARCHAR(100) DEFAULT NULL,
+            status ENUM('ASSIGNED', 'ACCEPTED', 'REACHED', 'INSPECTION', 'FOLLOW-UP REQUIRED', 'COMPLETED', 'OVERDUE', 'CANCELLED') DEFAULT 'ASSIGNED',
+            priority ENUM('Normal', 'High', 'Urgent') DEFAULT 'Normal',
+            assignment_timestamp TIMESTAMP NULL DEFAULT NULL,
+            last_activity_timestamp TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            arrival_timestamp TIMESTAMP NULL DEFAULT NULL,
+            completion_timestamp TIMESTAMP NULL DEFAULT NULL,
+            departure_timestamp TIMESTAMP NULL DEFAULT NULL,
+            arrival_lat VARCHAR(50) DEFAULT NULL,
+            arrival_lng VARCHAR(50) DEFAULT NULL,
+            departure_lat VARCHAR(50) DEFAULT NULL,
+            departure_lng VARCHAR(50) DEFAULT NULL,
+            product_condition ENUM('Normal', 'Minor Issue', 'Major Issue', 'Not Working') DEFAULT 'Normal',
+            inspection_result TEXT DEFAULT NULL,
+            service_performed TEXT DEFAULT NULL,
+            arrival_remark TEXT DEFAULT NULL,
+            final_remark TEXT DEFAULT NULL,
+            departure_remark TEXT DEFAULT NULL,
+            follow_up_notes TEXT DEFAULT NULL,
+            escalation_level INT DEFAULT 0,
+            is_inactive_reassigned TINYINT(1) DEFAULT 0,
+            scheduled_day_email_sent TINYINT(1) DEFAULT 0,
+            last_reminder_sent_at TIMESTAMP NULL DEFAULT NULL,
+            reminder_count INT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX(contract_id),
+            INDEX(assigned_engineer),
+            INDEX(scheduled_date),
+            INDEX(status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $conn->query("CREATE TABLE IF NOT EXISTS amc_assignments (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            visit_id INT NOT NULL,
+            contract_id INT NOT NULL,
+            engineer_name VARCHAR(100) NOT NULL,
+            previous_engineer VARCHAR(100) DEFAULT NULL,
+            assigned_by VARCHAR(100) NOT NULL,
+            assignment_reason VARCHAR(255) DEFAULT 'Scheduled Visit',
+            status ENUM('Active', 'Reassigned', 'Escalated', 'Completed') DEFAULT 'Active',
+            assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expired_at TIMESTAMP NULL DEFAULT NULL,
+            INDEX(visit_id),
+            INDEX(contract_id),
+            INDEX(engineer_name)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $conn->query("CREATE TABLE IF NOT EXISTS amc_audit_logs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            contract_id INT DEFAULT NULL,
+            visit_id INT DEFAULT NULL,
+            action VARCHAR(100) NOT NULL,
+            performed_by VARCHAR(100) NOT NULL,
+            role VARCHAR(50) DEFAULT NULL,
+            details TEXT DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX(contract_id),
+            INDEX(visit_id),
+            INDEX(action)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $conn->query("CREATE TABLE IF NOT EXISTS amc_settings (
+            setting_key VARCHAR(100) PRIMARY KEY,
+            setting_value TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 2. Ensure columns if tables existed beforehand
         $colsToAdd = [
             'amc_visits' => [
                 'scheduled_day_email_sent' => "TINYINT(1) DEFAULT 0",

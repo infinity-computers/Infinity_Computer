@@ -16,6 +16,8 @@ $staffRole = getStaffRole();
 $isAdmin = isAdmin();
 
 try {
+    ensureAmcSchemaColumns($conn);
+
     if ($action === 'list') {
         // List contracts with filters
         $search = isset($_GET['search']) ? trim($_GET['search']) : '';
@@ -164,14 +166,31 @@ try {
 
         $contract_id = $conn->insert_id;
 
-        // Save Customer in main customers table if not existing
-        $conn->query("INSERT IGNORE INTO customers (name, phone, email, company) VALUES ('" . $conn->real_escape_string($customer_name) . "', '" . $conn->real_escape_string($customer_phone) . "', '" . $conn->real_escape_string($customer_email) . "', '" . $conn->real_escape_string($company_name) . "')");
+        // Save Customer in main customers table if not existing (fail-safe)
+        try {
+            $conn->query("CREATE TABLE IF NOT EXISTS customers (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                phone VARCHAR(20) NOT NULL UNIQUE,
+                email VARCHAR(255) DEFAULT NULL,
+                company VARCHAR(255) DEFAULT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            $cName = $conn->real_escape_string($customer_name);
+            $cPhone = $conn->real_escape_string($customer_phone);
+            $cEmail = $conn->real_escape_string($customer_email);
+            $cComp = $conn->real_escape_string($company_name);
+            $conn->query("INSERT IGNORE INTO customers (name, phone, email, company) VALUES ('$cName', '$cPhone', '$cEmail', '$cComp')");
+        } catch (\Throwable $e) {
+            // Silently swallow customer sync issues to ensure contract creation completes
+        }
 
         // Insert Contract Products
         if (isset($_POST['products']) && is_array($_POST['products'])) {
             $stmtProd = $conn->prepare("INSERT INTO amc_contract_products (contract_id, product_id, product_name, quantity, serial_number, location_details, notes) VALUES (?, ?, ?, ?, ?, ?, ?)");
             foreach ($_POST['products'] as $prod) {
-                $p_id = !empty($prod['product_id']) ? intval($prod['product_id']) : null;
+                $p_id = (!empty($prod['product_id']) && is_numeric($prod['product_id'])) ? intval($prod['product_id']) : 0;
                 $p_name = trim($prod['product_name'] ?? 'Product');
                 $p_qty = intval($prod['quantity'] ?? 1);
                 $p_sn = trim($prod['serial_number'] ?? '');
@@ -291,7 +310,7 @@ try {
 
     echo json_encode(['status' => 'error', 'message' => 'Invalid action.']);
 
-} catch (Exception $e) {
+} catch (\Throwable $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
 ?>
