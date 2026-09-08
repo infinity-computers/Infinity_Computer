@@ -1240,7 +1240,7 @@ if ($updateStatusLog !== '' || $updateTaskLog !== '') {
     </script>
 
     <!-- AMC VISIT WORKFLOW MODAL -->
-    <div id="amc-visit-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.7); z-index:99999; justify-content:center; align-items:center; overflow-y:auto; padding:20px;">
+    <div id="amc-visit-modal" class="modal-overlay" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.7); z-index:99999; justify-content:center; align-items:center; overflow-y:auto; padding:20px;">
         <div style="background:#fff; width:100%; max-width:900px; max-height:90vh; border-radius:16px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.2); overflow-y:auto; padding:30px; position:relative; margin:auto;">
             <button onclick="window.AMC.closeVisitModal()" style="position:absolute; top:15px; right:20px; background:none; border:none; font-size:2rem; font-weight:700; cursor:pointer; color:#64748b; line-height:1;">&times;</button>
             <div id="amc-visit-modal-content"></div>
